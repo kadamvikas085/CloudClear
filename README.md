@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # CloudClear AI
 
 Generative reconstruction for LISS-IV satellite imagery — cloud removal, mask-aware inpainting and production-ready demo UI.
@@ -404,3 +405,7 @@ Connect with: `io(SERVER_URL, { auth: { token: accessToken } })`
 - **Async AI processing:** `POST /experiments/process` returns immediately (202) with a `queued` experiment. The actual inference runs in the separate worker process via BullMQ, with live progress delivered over Socket.IO regardless of which process (API or worker) triggers an event — bridged through Redis pub/sub (see `src/services/realtime.publisher.js`).
 - **Emails are queued, not sent inline** — registration, verification resend, and password reset never block on SMTP; BullMQ retries automatically with exponential backoff on transient failures.
 - **Uploads are memory-streamed** — Multer uses in-memory storage and Cloudinary's upload stream, so no file ever touches disk, keeping the API stateless and horizontally scalable.
+=======
+# liss4-cloud-removal
+Full-stack Generative AI platform for cloud detection and reconstruction of LISS-IV satellite images using FastAPI, React.js, Docker, OpenCV, Rasterio, GDAL, and Deep Learning. Supports real-time inference, geospatial processing, and model performance evaluation.
+>>>>>>> a1e143f8234c7ce561c34433ede37ff8ee0c2533
