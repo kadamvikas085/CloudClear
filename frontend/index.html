@@ -1,0 +1,2755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CloudClear AI — Generative Reconstruction for LISS-IV Imagery</title>
+<meta name="description" content="Generative AI-based cloud removal and reconstruction for LISS-IV satellite imagery. GANs, diffusion models, and inpainting networks restore cloud-free Earth observation data." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   DESIGN TOKENS
+   ============================================================ */
+:root{
+  /* Color */
+  --ink:#06080F;
+  --panel:#0B1220;
+  --panel-2:#0E1626;
+  --line: rgba(232,236,244,0.08);
+  --line-strong: rgba(232,236,244,0.16);
+  --text:#E8ECF4;
+  --text-dim: rgba(232,236,244,0.62);
+  --text-faint: rgba(232,236,244,0.38);
+  --cyan:#10B3C9;
+  --cyan-bright:#3FD8EE;
+  --violet:#7C6FE0;
+  --violet-bright:#9B8FFF;
+  --signal:#4ADE9C;
+  --amber:#E0A23F;
+
+  /* Type */
+  --font-display:'Space Grotesk', sans-serif;
+  --font-body:'Inter', sans-serif;
+  --font-mono:'JetBrains Mono', monospace;
+
+  /* Layout */
+  --maxw: 1280px;
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto;}
+  *{animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important; scroll-behavior:auto !important;}
+}
+
+body{
+  background:var(--ink);
+  color:var(--text);
+  font-family:var(--font-body);
+  line-height:1.5;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+
+::selection{ background:var(--cyan); color:var(--ink); }
+
+a{ color:inherit; text-decoration:none; }
+ul{ list-style:none; }
+img{ max-width:100%; display:block; }
+button{ font-family:inherit; cursor:pointer; border:none; background:none; color:inherit; }
+input, textarea{ font-family:inherit; }
+
+:focus-visible{
+  outline:2px solid var(--cyan-bright);
+  outline-offset:3px;
+  border-radius:4px;
+}
+
+.container{
+  max-width:var(--maxw);
+  margin:0 auto;
+  padding:0 32px;
+}
+@media (max-width:640px){ .container{ padding:0 20px; } }
+
+/* Background ambience: faint scanline + grain + radial glow, fixed behind everything */
+.bg-layer{
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+}
+.bg-glow{
+  position:absolute; inset:0;
+  background:
+    radial-gradient(ellipse 70% 50% at 20% -10%, rgba(124,111,224,0.16), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 100% 20%, rgba(16,179,201,0.12), transparent 60%),
+    radial-gradient(ellipse 50% 40% at 50% 100%, rgba(16,179,201,0.07), transparent 60%);
+}
+.bg-grid{
+  position:absolute; inset:0;
+  background-image:
+    linear-gradient(rgba(232,236,244,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(232,236,244,0.025) 1px, transparent 1px);
+  background-size: 64px 64px;
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%);
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%);
+}
+
+main{ position:relative; z-index:1; }
+
+/* ============================================================
+   TYPE SYSTEM
+   ============================================================ */
+.eyebrow{
+  font-family:var(--font-mono);
+  font-size:12px;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  color:var(--cyan-bright);
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.eyebrow::before{
+  content:'';
+  width:6px; height:6px;
+  border-radius:50%;
+  background:var(--cyan-bright);
+  box-shadow:0 0 8px var(--cyan-bright);
+  flex-shrink:0;
+}
+
+h1,h2,h3,h4{
+  font-family:var(--font-display);
+  font-weight:600;
+  letter-spacing:-0.01em;
+  line-height:1.08;
+}
+
+.section-head{
+  max-width:680px;
+  margin-bottom:56px;
+}
+.section-head h2{
+  font-size:clamp(28px, 4vw, 42px);
+  margin-top:14px;
+  color:var(--text);
+}
+.section-head p{
+  margin-top:16px;
+  font-size:17px;
+  color:var(--text-dim);
+  max-width:560px;
+}
+
+.section{
+  padding:120px 0;
+  position:relative;
+  border-bottom:1px solid var(--line);
+}
+@media (max-width:768px){ .section{ padding:80px 0; } }
+
+.mono-tag{
+  font-family:var(--font-mono);
+  font-size:11px;
+  letter-spacing:0.08em;
+  color:var(--text-faint);
+}
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+.btn{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:13px 24px;
+  border-radius:999px;
+  font-size:14.5px;
+  font-weight:600;
+  transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease), background 0.35s var(--ease), border-color .35s var(--ease);
+  white-space:nowrap;
+}
+.btn-primary{
+  background:linear-gradient(135deg, var(--cyan) 0%, var(--violet) 100%);
+  color:#04070D;
+}
+.btn-primary:hover{
+  transform:translateY(-2px);
+  box-shadow:0 12px 32px -8px rgba(16,179,201,0.5);
+}
+.btn-ghost{
+  border:1px solid var(--line-strong);
+  color:var(--text);
+  background:rgba(232,236,244,0.02);
+}
+.btn-ghost:hover{
+  border-color:var(--cyan-bright);
+  background:rgba(16,179,201,0.07);
+  transform:translateY(-2px);
+}
+.btn-sm{ padding:9px 18px; font-size:13px; }
+
+/* ============================================================
+   CARDS / GLASS
+   ============================================================ */
+.glass{
+  background:linear-gradient(160deg, rgba(232,236,244,0.045), rgba(232,236,244,0.015));
+  border:1px solid var(--line);
+  border-radius:var(--radius-lg);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  position:relative;
+}
+.glass::before{
+  content:'';
+  position:absolute; inset:0;
+  border-radius:inherit;
+  padding:1px;
+  background:linear-gradient(160deg, rgba(232,236,244,0.18), transparent 40%);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events:none;
+}
+
+.card-hover{
+  transition: transform 0.4s var(--ease), border-color 0.4s var(--ease), box-shadow 0.4s var(--ease);
+}
+.card-hover:hover{
+  transform:translateY(-6px);
+  border-color: rgba(16,179,201,0.4);
+  box-shadow:0 24px 48px -16px rgba(0,0,0,0.5);
+}
+
+/* corner bracket telemetry decoration */
+.bracket{ position:relative; }
+.bracket::after{
+  content:'';
+  position:absolute; top:10px; right:10px; width:14px; height:14px;
+  border-top:1.5px solid var(--text-faint);
+  border-right:1.5px solid var(--text-faint);
+  opacity:0.5;
+}
+
+/* ============================================================
+   SCROLL REVEAL
+   ============================================================ */
+.reveal{
+  opacity:0;
+  transform:translateY(28px);
+  transition:opacity 0.8s var(--ease), transform 0.8s var(--ease);
+}
+.reveal.in{
+  opacity:1;
+  transform:translateY(0);
+}
+
+/* ============================================================
+   NAV
+   ============================================================ */
+.nav{
+  position:fixed; top:0; left:0; right:0; z-index:100;
+  padding:18px 0;
+  transition: background 0.3s var(--ease), border-color .3s var(--ease), padding .3s var(--ease);
+  border-bottom:1px solid transparent;
+}
+.nav.scrolled{
+  background:rgba(6,8,15,0.78);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter:blur(16px);
+  border-bottom-color:var(--line);
+  padding:14px 0;
+}
+.nav-inner{
+  display:flex; align-items:center; justify-content:space-between;
+}
+.brand{
+  display:flex; align-items:center; gap:10px;
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:18px;
+  letter-spacing:-0.01em;
+}
+.brand-mark{
+  width:30px; height:30px;
+  border-radius:8px;
+  background:conic-gradient(from 180deg, var(--cyan), var(--violet), var(--cyan));
+  position:relative;
+  flex-shrink:0;
+}
+.brand-mark::after{
+  content:'';
+  position:absolute; inset:5px;
+  border-radius:5px;
+  background:var(--ink);
+}
+.nav-links{
+  display:flex; align-items:center; gap:34px;
+}
+.nav-links a{
+  font-size:14px; color:var(--text-dim); font-weight:500;
+  position:relative;
+  transition:color .25s;
+}
+.nav-links a:hover{ color:var(--text); }
+.nav-cta{ display:flex; align-items:center; gap:12px; }
+.nav-toggle{ display:none; }
+@media (max-width:920px){
+  .nav-links{ display:none; }
+  .nav-cta .btn-ghost{ display:none; }
+  .nav-toggle{ display:flex; }
+  #navCtaLoggedIn .user-chip{ display:none; }
+}
+@media (max-width:480px){
+  .nav-cta{ gap:8px; }
+}
+.mobile-menu{
+  position:fixed; top:64px; left:16px; right:16px; z-index:99;
+  background:rgba(11,18,32,0.96);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter:blur(20px);
+  border:1px solid var(--line-strong);
+  border-radius:var(--radius-md);
+  padding:18px;
+  display:flex; flex-direction:column; gap:4px;
+}
+.mobile-menu a{
+  padding:13px 10px; font-size:15px; color:var(--text-dim); font-weight:500;
+  border-radius:8px;
+}
+.mobile-menu a:hover{ background:rgba(232,236,244,0.05); color:var(--text); }
+.mobile-menu[hidden]{ display:none; }
+
+/* progress bar */
+.scroll-progress{
+  position:fixed; top:0; left:0; height:2px;
+  background:linear-gradient(90deg, var(--cyan), var(--violet));
+  z-index:200;
+  width:0%;
+  box-shadow:0 0 12px var(--cyan-bright);
+}
+
+/* back to top */
+.back-to-top{
+  position:fixed; bottom:28px; right:28px; z-index:90;
+  width:46px; height:46px; border-radius:50%;
+  background:var(--panel-2); border:1px solid var(--line-strong);
+  display:flex; align-items:center; justify-content:center;
+  opacity:0; pointer-events:none; transform:translateY(10px);
+  transition:opacity .35s var(--ease), transform .35s var(--ease), border-color .25s;
+}
+.back-to-top.show{ opacity:1; pointer-events:auto; transform:translateY(0); }
+.back-to-top:hover{ border-color:var(--cyan-bright); }
+
+/* skip link */
+.skip-link{
+  position:absolute; left:-999px; top:0;
+  background:var(--cyan); color:var(--ink); padding:10px 16px; border-radius:8px; z-index:300;
+}
+.skip-link:focus{ left:12px; top:12px; }
+
+/* ============================================================
+   HERO
+   ============================================================ */
+.hero{
+  padding:148px 0 90px;
+  position:relative;
+  overflow:hidden;
+}
+.hero-grid{
+  display:grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap:64px;
+  align-items:center;
+}
+@media (max-width:980px){
+  .hero-grid{ grid-template-columns:1fr; gap:56px; }
+}
+.hero-eyebrow{ margin-bottom:20px; }
+.hero h1{
+  font-size:clamp(32px, 4.4vw, 52px);
+  color:var(--text);
+}
+.hero h1 .grad{
+  background:linear-gradient(120deg, var(--cyan-bright), var(--violet-bright));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.hero p.lede{
+  margin-top:20px;
+  font-size:17px;
+  color:var(--text-dim);
+  max-width:540px;
+  line-height:1.6;
+}
+.hero-ctas{
+  margin-top:30px;
+  display:flex;
+  gap:14px;
+  flex-wrap:wrap;
+}
+.hero-stats{
+  margin-top:40px;
+  display:flex;
+  gap:36px;
+  flex-wrap:wrap;
+}
+.hero-stat .num{
+  font-family:var(--font-display);
+  font-size:28px;
+  font-weight:700;
+  color:var(--text);
+}
+.hero-stat .num .unit{ font-size:16px; color:var(--cyan-bright); margin-left:2px; }
+.hero-stat .label{
+  font-family:var(--font-mono);
+  font-size:11px;
+  color:var(--text-faint);
+  letter-spacing:0.05em;
+  margin-top:4px;
+}
+
+/* Visual: telemetry swath panel */
+.hero-visual{
+  position:relative;
+  border-radius:var(--radius-lg);
+  padding:18px;
+  aspect-ratio: 1/1.02;
+}
+@media (max-width:980px){ .hero-visual{ aspect-ratio:1/0.85; } }
+.telemetry-head{
+  display:flex; justify-content:space-between; align-items:center;
+  font-family:var(--font-mono); font-size:11px; color:var(--text-faint);
+  padding:2px 6px 14px;
+  letter-spacing:0.04em;
+}
+.telemetry-head .live{ color:var(--signal); display:flex; align-items:center; gap:6px;}
+.telemetry-head .live::before{
+  content:''; width:6px; height:6px; border-radius:50%; background:var(--signal);
+  box-shadow:0 0 8px var(--signal);
+  animation:pulse-dot 1.8s ease-in-out infinite;
+}
+@keyframes pulse-dot{ 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
+.swath-stage{
+  position:relative;
+  width:100%;
+  height:calc(100% - 80px);
+  border-radius:14px;
+  overflow:hidden;
+  background:#070B14;
+  border:1px solid var(--line);
+}
+#heroCanvas{ width:100%; height:100%; display:block; }
+
+.scan-line{
+  position:absolute; left:0; right:0; height:46%;
+  top:0;
+  background:linear-gradient(180deg, transparent, rgba(16,179,201,0.0));
+  border-bottom:1.5px solid var(--cyan-bright);
+  box-shadow:0 0 18px rgba(63,216,238,0.55), 0 0 1px rgba(63,216,238,0.9);
+  animation: scan-move 5.5s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes scan-move{
+  0%, 8%{ top:4%; }
+  50%{ top:74%; }
+  92%,100%{ top:4%; }
+}
+.swath-label-l, .swath-label-r{
+  position:absolute; bottom:10px;
+  font-family:var(--font-mono); font-size:10px; letter-spacing:0.06em;
+  padding:4px 9px; border-radius:5px;
+  background:rgba(6,8,15,0.65); border:1px solid var(--line-strong);
+}
+.swath-label-l{ left:10px; color:var(--amber); }
+.swath-label-r{ right:10px; color:var(--signal); }
+
+.telemetry-foot{
+  display:flex; justify-content:space-between;
+  font-family:var(--font-mono); font-size:10.5px; color:var(--text-faint);
+  padding:14px 6px 2px;
+  letter-spacing:0.03em;
+}
+.telemetry-foot span b{ color:var(--text-dim); font-weight:500; }
+
+/* ============================================================
+   ABOUT
+   ============================================================ */
+.about-lead-row{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:48px;
+  align-items:start;
+  margin-bottom:56px;
+}
+@media (max-width:860px){ .about-lead-row{ grid-template-columns:1fr; gap:28px;} }
+.stat-block{ padding:26px; }
+.stat-row{ display:flex; justify-content:space-between; align-items:baseline; padding:13px 0; border-bottom:1px solid var(--line); }
+.stat-row:last-child{ border-bottom:none; }
+.stat-row .label{ font-size:13.5px; color:var(--text-dim); }
+.stat-row .val{ font-family:var(--font-mono); font-size:14.5px; color:var(--cyan-bright); text-align:right; }
+
+.about-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:22px;
+}
+@media (max-width:920px){ .about-grid{ grid-template-columns:1fr 1fr; } }
+@media (max-width:640px){ .about-grid{ grid-template-columns:1fr; } }
+.about-card{
+  padding:30px 26px;
+  display:flex; flex-direction:column; gap:14px;
+}
+.about-card .icon-wrap{
+  width:42px; height:42px; border-radius:11px;
+  display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(140deg, rgba(16,179,201,0.16), rgba(124,111,224,0.16));
+  border:1px solid var(--line-strong);
+  color:var(--cyan-bright);
+}
+.about-card h3{ font-size:18.5px; color:var(--text); font-weight:600; }
+.about-card p{ font-size:14.5px; color:var(--text-dim); line-height:1.65; }
+
+/* ============================================================
+   WORKFLOW TIMELINE
+   ============================================================ */
+.workflow-rail{
+  position:relative;
+  max-width:760px;
+  margin:0 auto;
+}
+.workflow-rail::before{
+  content:'';
+  position:absolute; left:27px; top:8px; bottom:8px; width:1px;
+  background:linear-gradient(180deg, var(--cyan) 0%, var(--violet) 100%);
+  opacity:0.35;
+}
+.wf-step{
+  position:relative;
+  display:flex;
+  gap:26px;
+  padding-bottom:48px;
+}
+.wf-step:last-child{ padding-bottom:0; }
+.wf-node{
+  flex-shrink:0;
+  width:56px; height:56px;
+  border-radius:50%;
+  background:var(--panel-2);
+  border:1px solid var(--line-strong);
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-mono); font-weight:600; font-size:14px; color:var(--text-faint);
+  position:relative; z-index:2;
+  transition: border-color .5s var(--ease), color .5s var(--ease), box-shadow .5s var(--ease);
+}
+.wf-step.in .wf-node{
+  border-color:var(--cyan-bright);
+  color:var(--cyan-bright);
+  box-shadow:0 0 0 4px rgba(16,179,201,0.08), 0 0 18px rgba(63,216,238,0.25);
+}
+.wf-body{ padding-top:8px; }
+.wf-body h3{ font-size:18px; color:var(--text); margin-bottom:6px; }
+.wf-body p{ font-size:14.5px; color:var(--text-dim); max-width:480px; line-height:1.6; }
+.wf-tag{
+  display:inline-block; margin-top:10px;
+  font-family:var(--font-mono); font-size:10.5px; color:var(--violet-bright);
+  background:rgba(124,111,224,0.12); border:1px solid rgba(124,111,224,0.3);
+  padding:4px 10px; border-radius:6px; letter-spacing:0.04em;
+}
+
+/* ============================================================
+   MODELS
+   ============================================================ */
+.model-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:18px;
+}
+@media (max-width:1080px){ .model-grid{ grid-template-columns:repeat(2,1fr); } }
+@media (max-width:560px){ .model-grid{ grid-template-columns:1fr; } }
+
+.model-card{
+  padding:24px 22px;
+  cursor:pointer;
+  display:flex; flex-direction:column; gap:10px;
+  min-height:178px;
+}
+.model-card .model-name{ font-size:17px; color:var(--text); font-weight:600; font-family:var(--font-display); }
+.model-card .model-purpose{ font-size:13px; color:var(--text-dim); line-height:1.55; flex-grow:1; }
+.model-card .model-meta{
+  display:flex; justify-content:space-between; align-items:center;
+  font-family:var(--font-mono); font-size:10.5px; color:var(--text-faint);
+  padding-top:10px; border-top:1px solid var(--line);
+}
+.complexity-dots{ display:flex; gap:3px; }
+.complexity-dots span{ width:5px; height:5px; border-radius:50%; background:var(--line-strong); }
+.complexity-dots span.fill{ background:var(--cyan-bright); }
+
+/* model detail modal */
+.modal-overlay{
+  position:fixed; inset:0; z-index:200;
+  background:rgba(6,8,15,0.7);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter:blur(6px);
+  display:flex; align-items:center; justify-content:center;
+  padding:24px;
+  opacity:0; pointer-events:none;
+  transition:opacity .3s var(--ease);
+}
+.modal-overlay.show{ opacity:1; pointer-events:auto; }
+.modal-box{
+  max-width:480px; width:100%;
+  padding:32px;
+  transform:translateY(16px) scale(0.97);
+  transition:transform .35s var(--ease);
+  max-height:84vh; overflow-y:auto;
+}
+.modal-overlay.show .modal-box{ transform:translateY(0) scale(1); }
+.modal-close{
+  position:absolute; top:18px; right:18px;
+  width:32px; height:32px; border-radius:50%;
+  background:rgba(232,236,244,0.06); display:flex; align-items:center; justify-content:center;
+  color:var(--text-dim); transition:background .2s, color .2s;
+}
+.modal-close:hover{ background:rgba(232,236,244,0.12); color:var(--text); }
+.modal-box h3{ font-size:24px; margin-bottom:6px; padding-right:30px; }
+.modal-box .modal-sub{ font-family:var(--font-mono); font-size:11px; color:var(--cyan-bright); margin-bottom:20px; }
+.modal-field{ margin-bottom:16px; }
+.modal-field .mf-label{ font-family:var(--font-mono); font-size:10.5px; color:var(--text-faint); letter-spacing:0.05em; margin-bottom:4px; }
+.modal-field .mf-val{ font-size:14.5px; color:var(--text-dim); line-height:1.6; }
+
+/* ============================================================
+   DATASETS
+   ============================================================ */
+.dataset-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:20px;
+}
+@media (max-width:920px){ .dataset-grid{ grid-template-columns:1fr 1fr; } }
+@media (max-width:640px){ .dataset-grid{ grid-template-columns:1fr; } }
+.dataset-card{
+  padding:24px;
+  display:flex; flex-direction:column; gap:12px;
+}
+.dataset-card .ds-head{ display:flex; justify-content:space-between; align-items:flex-start; }
+.dataset-card .ds-name{ font-size:17px; font-weight:600; color:var(--text); font-family:var(--font-display); }
+.ds-pill{
+  font-family:var(--font-mono); font-size:10px; padding:3px 9px; border-radius:999px;
+  border:1px solid rgba(74,222,156,0.35); color:var(--signal); background:rgba(74,222,156,0.08);
+  white-space:nowrap;
+}
+.ds-pill.limited{ border-color:rgba(224,162,63,0.4); color:var(--amber); background:rgba(224,162,63,0.08); }
+.dataset-card p.ds-desc{ font-size:13.5px; color:var(--text-dim); line-height:1.55; }
+.ds-meta-row{ display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:11px; color:var(--text-faint); padding:8px 0; border-top:1px solid var(--line); }
+.ds-meta-row b{ color:var(--text-dim); font-weight:500; }
+.ds-link{
+  font-family:var(--font-mono); font-size:11.5px; color:var(--cyan-bright);
+  display:flex; align-items:center; gap:6px; margin-top:2px;
+}
+.ds-link:hover{ text-decoration:underline; }
+
+/* ============================================================
+   GENERATIVE AI EXPLAINER
+   ============================================================ */
+.genai-flow{
+  display:flex; align-items:center; justify-content:center;
+  gap:0; flex-wrap:wrap;
+  margin-bottom:64px;
+}
+.genai-node{
+  display:flex; flex-direction:column; align-items:center; gap:10px;
+  padding:22px 18px;
+  width:148px;
+  text-align:center;
+}
+.genai-node .gn-icon{
+  width:52px; height:52px; border-radius:14px;
+  display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(140deg, rgba(16,179,201,0.18), rgba(124,111,224,0.18));
+  border:1px solid var(--line-strong);
+  color:var(--cyan-bright);
+}
+.genai-node .gn-label{ font-size:13px; font-weight:600; color:var(--text); }
+.genai-node .gn-sub{ font-family:var(--font-mono); font-size:10px; color:var(--text-faint); }
+.genai-arrow{
+  color:var(--text-faint); flex-shrink:0; padding:0 6px;
+  display:flex; align-items:center;
+}
+@media (max-width:768px){
+  .genai-arrow svg{ transform:rotate(90deg); }
+}
+
+.diffusion-explain{
+  display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:center;
+  padding:36px;
+}
+@media (max-width:860px){ .diffusion-explain{ grid-template-columns:1fr; } }
+.diffusion-steps{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.diffusion-dot{
+  width:38px; height:38px; border-radius:8px;
+  background:var(--panel-2); border:1px solid var(--line-strong);
+}
+.diffusion-steps .arrow-sm{ color:var(--text-faint); font-size:14px; }
+
+/* ============================================================
+   IMAGE COMPARISON SLIDER
+   ============================================================ */
+.compare-wrap{
+  max-width:760px; margin:0 auto;
+}
+.compare-frame{
+  position:relative;
+  aspect-ratio: 16/10;
+  border-radius:var(--radius-lg);
+  overflow:hidden;
+  border:1px solid var(--line-strong);
+  cursor:ew-resize;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select:none;
+}
+.compare-img{
+  position:absolute; inset:0;
+  background-size:cover; background-position:center;
+}
+.compare-after{ background: linear-gradient(135deg,#0d2b30,#143a4a 35%, #1c5258 60%, #2c7a5e 100%); }
+.compare-before{ background: linear-gradient(135deg,#1a2433,#283449 40%, #4a5a72 70%, #9fb0c4 100%); }
+.compare-clip{
+  position:absolute; inset:0;
+  overflow:hidden;
+}
+.compare-handle{
+  position:absolute; top:0; bottom:0; width:0;
+  pointer-events:none;
+}
+.compare-handle::before{
+  content:''; position:absolute; top:0; bottom:0; left:-1px; width:2px;
+  background:var(--cyan-bright); box-shadow:0 0 12px var(--cyan-bright);
+}
+.compare-handle::after{
+  content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  width:38px; height:38px; border-radius:50%;
+  background:var(--cyan-bright);
+  box-shadow:0 4px 14px rgba(0,0,0,0.4);
+}
+.compare-handle .ch-arrows{
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  width:38px; height:38px;
+  display:flex; align-items:center; justify-content:center;
+  color:#04070D;
+  z-index:1;
+}
+.compare-tag{
+  position:absolute; bottom:14px;
+  font-family:var(--font-mono); font-size:11px; padding:5px 11px; border-radius:6px;
+  background:rgba(6,8,15,0.65); border:1px solid var(--line-strong); z-index:3;
+}
+.compare-tag.left{ left:14px; }
+.compare-tag.right{ right:14px; }
+.compare-hint{
+  text-align:center; margin-top:18px; font-family:var(--font-mono); font-size:11.5px; color:var(--text-faint);
+}
+
+/* ============================================================
+   LIVE DEMO
+   ============================================================ */
+.demo-shell{
+  display:grid; grid-template-columns: 1fr 1fr; gap:0;
+  overflow:hidden;
+}
+@media (max-width:860px){ .demo-shell{ grid-template-columns:1fr; } }
+.demo-panel{ padding:38px; }
+.demo-panel + .demo-panel{ border-left:1px solid var(--line); }
+@media (max-width:860px){ .demo-panel + .demo-panel{ border-left:none; border-top:1px solid var(--line); } }
+.dropzone{
+  border:1.5px dashed var(--line-strong);
+  border-radius:var(--radius-md);
+  padding:48px 24px;
+  text-align:center;
+  transition:border-color .3s, background .3s;
+  cursor:pointer;
+}
+.dropzone.drag{ border-color:var(--cyan-bright); background:rgba(16,179,201,0.06); }
+.dropzone svg{ color:var(--text-faint); margin:0 auto 14px; }
+.dropzone .dz-title{ font-size:15px; font-weight:600; color:var(--text); margin-bottom:4px; }
+.dropzone .dz-sub{ font-size:13px; color:var(--text-faint); }
+.demo-steps{ display:flex; flex-direction:column; gap:0; margin-top:24px; }
+.demo-step-row{
+  display:flex; align-items:center; gap:12px;
+  padding:13px 0; border-bottom:1px solid var(--line);
+  font-size:13.5px; color:var(--text-faint);
+  transition:color .3s;
+}
+.demo-step-row:last-child{ border-bottom:none; }
+.demo-step-row .ds-dot{
+  width:18px; height:18px; border-radius:50%; flex-shrink:0;
+  border:1.5px solid var(--line-strong);
+  display:flex; align-items:center; justify-content:center;
+  transition:border-color .3s, background .3s;
+}
+.demo-step-row.active{ color:var(--text); }
+.demo-step-row.active .ds-dot{ border-color:var(--cyan-bright); }
+.demo-step-row.done{ color:var(--text-dim); }
+.demo-step-row.done .ds-dot{ background:var(--signal); border-color:var(--signal); }
+.demo-step-row.done .ds-dot::after{ content:'✓'; font-size:10px; color:#04070D; }
+.demo-step-row.active .ds-dot::after{
+  content:''; width:7px; height:7px; border-radius:50%; background:var(--cyan-bright);
+  animation:pulse-dot 1s ease-in-out infinite;
+}
+.progress-track{
+  margin-top:22px; height:6px; border-radius:99px; background:rgba(232,236,244,0.06); overflow:hidden;
+}
+.progress-fill{
+  height:100%; width:0%; border-radius:99px;
+  background:linear-gradient(90deg, var(--cyan), var(--violet));
+  transition:width .4s var(--ease);
+}
+.progress-pct{ margin-top:8px; font-family:var(--font-mono); font-size:11px; color:var(--text-faint); text-align:right; }
+.demo-result-box{
+  height:100%; min-height:280px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+  border-radius:var(--radius-md);
+  background:var(--panel-2); border:1px solid var(--line);
+  text-align:center; padding:24px;
+}
+.demo-result-box svg{ color:var(--text-faint); }
+.demo-result-box.ready{ background:linear-gradient(160deg, rgba(16,179,201,0.08), rgba(124,111,224,0.06)); border-color:rgba(74,222,156,0.3); }
+.demo-result-box .dr-title{ font-size:15px; font-weight:600; color:var(--text); }
+.demo-result-box .dr-sub{ font-size:13px; color:var(--text-faint); max-width:260px; }
+
+/* ============================================================
+   FEATURES
+   ============================================================ */
+.features-grid{
+  display:grid; grid-template-columns:repeat(4,1fr); gap:18px;
+}
+@media (max-width:980px){ .features-grid{ grid-template-columns:repeat(2,1fr); } }
+@media (max-width:560px){ .features-grid{ grid-template-columns:1fr; } }
+.feature-card{
+  padding:26px 22px;
+  display:flex; flex-direction:column; gap:12px;
+}
+.feature-card .icon-wrap{
+  width:40px; height:40px; border-radius:10px;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(16,179,201,0.1); border:1px solid var(--line-strong); color:var(--cyan-bright);
+}
+.feature-card h4{ font-size:15.5px; color:var(--text); font-weight:600; }
+.feature-card p{ font-size:13px; color:var(--text-dim); line-height:1.55; }
+
+/* ============================================================
+   APPLICATIONS
+   ============================================================ */
+.apps-grid{
+  display:grid; grid-template-columns:repeat(4,1fr); gap:16px;
+}
+@media (max-width:920px){ .apps-grid{ grid-template-columns:repeat(2,1fr); } }
+@media (max-width:560px){ .apps-grid{ grid-template-columns:1fr; } }
+.app-pill{
+  padding:22px 20px;
+  display:flex; align-items:center; gap:14px;
+}
+.app-pill .icon-wrap{
+  width:38px; height:38px; border-radius:10px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(124,111,224,0.12); border:1px solid var(--line-strong); color:var(--violet-bright);
+}
+.app-pill span{ font-size:14px; color:var(--text); font-weight:500; }
+
+/* ============================================================
+   PERFORMANCE
+   ============================================================ */
+.metrics-grid{
+  display:grid; grid-template-columns:repeat(5,1fr); gap:16px; margin-bottom:48px;
+}
+@media (max-width:920px){ .metrics-grid{ grid-template-columns:repeat(3,1fr); } }
+@media (max-width:560px){ .metrics-grid{ grid-template-columns:repeat(2,1fr); } }
+.metric-card{
+  padding:22px 18px; text-align:center;
+}
+.metric-card .metric-val{ font-family:var(--font-display); font-size:26px; font-weight:700; color:var(--cyan-bright); }
+.metric-card .metric-label{ font-family:var(--font-mono); font-size:10.5px; color:var(--text-faint); margin-top:6px; letter-spacing:0.04em; }
+.metric-card .metric-full{ font-size:11.5px; color:var(--text-dim); margin-top:4px; }
+
+.chart-card{ padding:30px; }
+.chart-card h3{ font-size:16px; color:var(--text); margin-bottom:20px; font-weight:600; }
+.bar-row{ display:flex; align-items:center; gap:14px; margin-bottom:14px; }
+.bar-row:last-child{ margin-bottom:0; }
+.bar-label{ width:88px; flex-shrink:0; font-family:var(--font-mono); font-size:11.5px; color:var(--text-dim); }
+.bar-track{ flex-grow:1; height:10px; border-radius:99px; background:rgba(232,236,244,0.06); overflow:hidden; }
+.bar-fill{ height:100%; border-radius:99px; width:0%; background:linear-gradient(90deg, var(--cyan), var(--violet)); transition:width 1.2s var(--ease); }
+.bar-val{ width:48px; text-align:right; font-family:var(--font-mono); font-size:11.5px; color:var(--text); flex-shrink:0; }
+
+/* ============================================================
+   TECH STACK
+   ============================================================ */
+.tech-grid{
+  display:grid; grid-template-columns:repeat(7,1fr); gap:14px;
+}
+@media (max-width:920px){ .tech-grid{ grid-template-columns:repeat(4,1fr); } }
+@media (max-width:560px){ .tech-grid{ grid-template-columns:repeat(3,1fr); } }
+.tech-chip{
+  padding:18px 10px;
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+  text-align:center;
+}
+.tech-chip .tc-name{ font-size:12px; color:var(--text-dim); font-weight:500; }
+.tech-chip .tc-dot{ width:8px; height:8px; border-radius:50%; }
+
+/* ============================================================
+   TEAM
+   ============================================================ */
+.team-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:20px; }
+@media (max-width:920px){ .team-grid{ grid-template-columns:repeat(2,1fr); } }
+@media (max-width:560px){ .team-grid{ grid-template-columns:1fr; } }
+.team-card{ padding:28px 22px; text-align:center; }
+.team-avatar{
+  width:64px; height:64px; border-radius:50%; margin:0 auto 16px;
+  background:conic-gradient(from 180deg, var(--cyan), var(--violet), var(--cyan));
+  display:flex; align-items:center; justify-content:center;
+  position:relative;
+}
+.team-avatar span{
+  position:absolute; inset:2px; border-radius:50%; background:var(--panel-2);
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-display); font-weight:600; font-size:18px; color:var(--text);
+}
+.team-card .t-name{ font-size:15.5px; font-weight:600; color:var(--text); }
+.team-card .t-role{ font-family:var(--font-mono); font-size:11px; color:var(--cyan-bright); margin-top:3px; margin-bottom:14px; }
+.team-links{ display:flex; gap:10px; justify-content:center; }
+.team-links a{
+  width:30px; height:30px; border-radius:8px;
+  display:flex; align-items:center; justify-content:center;
+  border:1px solid var(--line-strong); color:var(--text-faint);
+  transition:color .25s, border-color .25s;
+}
+.team-links a:hover{ color:var(--cyan-bright); border-color:var(--cyan-bright); }
+
+/* ============================================================
+   RESEARCH
+   ============================================================ */
+.research-grid{ display:grid; grid-template-columns:1.3fr 1fr; gap:24px; }
+@media (max-width:860px){ .research-grid{ grid-template-columns:1fr; } }
+.paper-list{ display:flex; flex-direction:column; }
+.paper-row{
+  display:flex; justify-content:space-between; align-items:center; gap:16px;
+  padding:18px 0; border-bottom:1px solid var(--line);
+}
+.paper-row:first-child{ padding-top:0; }
+.paper-row:last-child{ border-bottom:none; }
+.paper-row .p-title{ font-size:14.5px; color:var(--text); font-weight:500; }
+.paper-row .p-meta{ font-family:var(--font-mono); font-size:11px; color:var(--text-faint); margin-top:4px; }
+.paper-row .p-arrow{ color:var(--text-faint); flex-shrink:0; }
+.future-list{ display:flex; flex-direction:column; gap:14px; }
+.future-item{ display:flex; gap:12px; align-items:flex-start; }
+.future-item .fi-dot{ width:6px; height:6px; border-radius:50%; background:var(--violet-bright); margin-top:7px; flex-shrink:0; }
+.future-item p{ font-size:13.5px; color:var(--text-dim); line-height:1.55; }
+
+/* ============================================================
+   FAQ
+   ============================================================ */
+.faq-list{ max-width:760px; }
+.faq-item{ border-bottom:1px solid var(--line); }
+.faq-item:first-child{ border-top:1px solid var(--line); }
+.faq-q{
+  width:100%; display:flex; justify-content:space-between; align-items:center;
+  padding:22px 4px; text-align:left; font-size:16px; font-weight:500; color:var(--text);
+}
+.faq-q .faq-icon{ flex-shrink:0; transition:transform .35s var(--ease); color:var(--cyan-bright); }
+.faq-item.open .faq-icon{ transform:rotate(45deg); }
+.faq-a{
+  max-height:0; overflow:hidden; transition:max-height .4s var(--ease);
+}
+.faq-a-inner{ padding:0 4px 22px; font-size:14.5px; color:var(--text-dim); line-height:1.65; max-width:620px; }
+
+/* ============================================================
+   CONTACT
+   ============================================================ */
+.contact-grid{ display:grid; grid-template-columns:1.1fr 0.9fr; gap:32px; }
+@media (max-width:860px){ .contact-grid{ grid-template-columns:1fr; } }
+.contact-form{ padding:32px; display:flex; flex-direction:column; gap:16px; }
+.form-row{ display:flex; flex-direction:column; gap:6px; }
+.form-row label{ font-size:13px; color:var(--text-dim); font-weight:500; }
+.form-row input, .form-row textarea{
+  background:rgba(232,236,244,0.04); border:1px solid var(--line-strong); border-radius:10px;
+  padding:12px 14px; color:var(--text); font-size:14px; resize:vertical;
+  transition:border-color .25s, background .25s;
+}
+.form-row input:focus, .form-row textarea:focus{ border-color:var(--cyan-bright); background:rgba(232,236,244,0.06); outline:none; }
+.form-row input::placeholder, .form-row textarea::placeholder{ color:var(--text-faint); }
+.form-status{ font-size:13px; color:var(--signal); display:none; }
+.form-status.show{ display:block; }
+
+/* ============================================================
+   AUTH VIEW (login / register) — inline, no separate pages
+   ============================================================ */
+.auth-view{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:100px 24px 40px; }
+.auth-card{ width:100%; max-width:420px; padding:40px; }
+.auth-card h1{ font-family:var(--font-display); font-size:24px; margin-bottom:6px; }
+.auth-card .auth-sub{ color:var(--text-dim); font-size:14px; margin-bottom:24px; }
+.auth-card form{ display:flex; flex-direction:column; gap:16px; }
+.auth-msg{ font-size:13px; display:none; }
+.auth-msg.show{ display:block; }
+.auth-msg.error{ color:var(--danger, #E06A6A); }
+.auth-msg.success{ color:var(--signal); }
+.auth-switch{ margin-top:20px; font-size:13.5px; color:var(--text-dim); text-align:center; }
+.auth-switch a{ color:var(--cyan-bright); cursor:pointer; }
+.auth-back{ display:inline-block; margin-bottom:20px; font-size:13px; color:var(--text-faint); cursor:pointer; }
+.btn-block{ width:100%; justify-content:center; border:none; cursor:pointer; }
+@media (max-width:480px){
+  .auth-view{ padding:88px 12px 32px; }
+  .auth-card{ padding:26px 20px; }
+}
+
+/* ============================================================
+   APP VIEW (authenticated dashboard)
+   ============================================================ */
+.app-view{ padding-top:100px; }
+.app-head{ margin-bottom:28px; }
+.app-head h1{ font-family:var(--font-display); font-size:28px; margin-bottom:6px; word-break:break-word; }
+.app-head p{ color:var(--text-dim); font-size:14.5px; }
+.row{ display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:11px 0; border-bottom:1px solid var(--line); font-size:14px; }
+.row:last-child{ border-bottom:none; }
+.row span:first-child{ color:var(--text-dim); flex-shrink:0; }
+.row span:last-child{ text-align:right; word-break:break-word; min-width:0; }
+.demo-result-box.error{ background:rgba(224,106,106,0.06); border-color:rgba(224,106,106,0.35); }
+.demo-result-box img{ max-width:100%; border-radius:10px; border:1px solid var(--line); }
+.user-chip{ font-size:13.5px; color:var(--text-dim); max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.user-chip strong{ color:var(--text); font-weight:600; }
+@media (max-width:768px){
+  .app-view{ padding-top:88px; }
+  .app-head h1{ font-size:23px; }
+}
+@media (max-width:480px){
+  .demo-panel{ padding:22px; }
+  .row{ font-size:13.5px; }
+}
+
+.contact-side{ display:flex; flex-direction:column; gap:18px; }
+.map-placeholder{
+  flex-grow:1; min-height:160px; border-radius:var(--radius-md);
+  background:
+    radial-gradient(circle at 30% 30%, rgba(16,179,201,0.18), transparent 50%),
+    repeating-linear-gradient(45deg, rgba(232,236,244,0.025) 0 2px, transparent 2px 14px);
+  border:1px solid var(--line);
+  display:flex; align-items:center; justify-content:center; flex-direction:column; gap:8px;
+  color:var(--text-faint);
+}
+.contact-info-card{ padding:24px; display:flex; flex-direction:column; gap:14px; }
+.contact-info-row{ display:flex; align-items:center; gap:12px; font-size:13.5px; color:var(--text-dim); }
+.contact-info-row svg{ flex-shrink:0; color:var(--cyan-bright); }
+.social-row{ display:flex; gap:10px; margin-top:6px; }
+.social-row a{
+  width:36px; height:36px; border-radius:9px; border:1px solid var(--line-strong);
+  display:flex; align-items:center; justify-content:center; color:var(--text-dim);
+  transition:border-color .25s, color .25s;
+}
+.social-row a:hover{ border-color:var(--cyan-bright); color:var(--cyan-bright); }
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+footer{ padding:64px 0 32px; }
+.footer-grid{ display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:32px; margin-bottom:48px; }
+@media (max-width:768px){ .footer-grid{ grid-template-columns:1fr 1fr; } }
+@media (max-width:480px){ .footer-grid{ grid-template-columns:1fr; } }
+.footer-brand p{ font-size:13.5px; color:var(--text-faint); margin-top:14px; max-width:280px; line-height:1.6; }
+.footer-col h5{ font-family:var(--font-mono); font-size:11px; letter-spacing:0.06em; color:var(--text-faint); margin-bottom:16px; text-transform:uppercase; }
+.footer-col a{ display:block; font-size:13.5px; color:var(--text-dim); padding:6px 0; transition:color .2s; }
+.footer-col a:hover{ color:var(--cyan-bright); }
+.footer-bottom{
+  display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;
+  padding-top:28px; border-top:1px solid var(--line);
+  font-size:12.5px; color:var(--text-faint);
+}
+.footer-bottom .fb-links{ display:flex; gap:18px; }
+</style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+<div class="scroll-progress" id="scrollProgress"></div>
+
+<div class="bg-layer">
+  <div class="bg-glow"></div>
+  <div class="bg-grid"></div>
+</div>
+
+<!-- ============================================================
+     NAV
+============================================================ -->
+<nav class="nav" id="mainNav">
+  <div class="container nav-inner">
+    <a href="#top" class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      CloudClear<span style="color:var(--cyan-bright)">AI</span>
+    </a>
+   <ul class="nav-links">
+  <li><a href="#about">About</a></li>
+  <li><a href="#workflow">Workflow</a></li>
+  <li><a href="#models">Models</a></li>
+  <li><a href="#datasets">Datasets</a></li>
+  <li><a href="#demo">Live Demo</a></li>
+  <li><a href="#performance">Performance</a></li>
+  <li><a href="#research">Research</a></li>
+  <li><a href="#faq">FAQ</a></li>
+</ul>
+
+<div class="nav-cta" id="navCtaLoggedOut">
+    <a href="#" class="btn btn-ghost btn-sm" id="navLoginBtn">Log In</a>
+    <a href="#" class="btn btn-primary btn-sm" id="navRegisterBtn">Sign Up</a>
+</div>
+<div class="nav-cta" id="navCtaLoggedIn" hidden>
+    <span class="user-chip" id="navUserChip"></span>
+    <a href="#" class="btn btn-ghost btn-sm" id="navLogoutBtn">Log out</a>
+</div>
+
+<button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+  </div>
+</nav>
+
+<div id="mobileMenu" class="mobile-menu" hidden>
+  <a href="#about">About</a>
+  <a href="#workflow">Workflow</a>
+  <a href="#models">Models</a>
+  <a href="#datasets">Datasets</a>
+  <a href="#demo">Live Demo</a>
+  <a href="#performance">Performance</a>
+  <a href="#research">Research</a>
+  <a href="#faq">FAQ</a>
+  <a href="#" id="mobileLoginBtn" style="margin-top:4px;">Log In</a>
+  <a href="#" id="mobileRegisterBtn" class="btn btn-primary" style="margin-top:8px;justify-content:center;">Sign Up</a>
+  <a href="#" id="mobileLogoutBtn" class="btn btn-ghost" style="margin-top:8px;justify-content:center;" hidden>Log out</a>
+</div>
+
+<main id="main-content">
+<div id="marketingView">
+
+<!-- ============================================================
+     HERO
+============================================================ -->
+<section class="hero" id="top">
+  <div class="container hero-grid">
+    <div>
+      <p class="eyebrow hero-eyebrow">LISS-IV EARTH OBSERVATION &middot; GENERATIVE RECONSTRUCTION</p>
+      <h1>Generative AI-based <span class="grad">cloud removal</span> &amp; reconstruction for LISS-IV satellite imagery</h1>
+      <p class="lede">Transform cloud-occluded LISS-IV scenes into high-fidelity, cloud-free imagery using GANs, diffusion models, and image inpainting networks &mdash; trained for Earth observation at India's resolution standard.</p>
+      <div class="hero-ctas">
+        <a href="#demo" class="btn btn-primary">Try Demo</a>
+        <a href="#research" class="btn btn-ghost">View Research</a>
+        <a href="#" class="btn btn-ghost">GitHub</a>
+        <a href="#" class="btn btn-ghost">Documentation</a>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <div class="num" data-count="31.4" data-decimals="1"><span class="unit">dB</span></div>
+          <div class="label">PSNR, MEAN</div>
+        </div>
+        <div class="hero-stat">
+          <div class="num" data-count="0.94" data-decimals="2">&nbsp;</div>
+          <div class="label">SSIM SCORE</div>
+        </div>
+        <div class="hero-stat">
+          <div class="num" data-count="5.6" data-decimals="1"><span class="unit">m</span></div>
+          <div class="label">SPATIAL RESOLUTION</div>
+        </div>
+        <div class="hero-stat">
+          <div class="num" data-count="312" data-decimals="0">&nbsp;</div>
+          <div class="label">SCENES PROCESSED</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-visual glass bracket">
+      <div class="telemetry-head">
+        <span>SWATH&nbsp; 21.4&deg;N, 78.1&deg;E</span>
+        <span class="live">RECONSTRUCTING</span>
+      </div>
+      <div class="swath-stage">
+        <canvas id="heroCanvas"></canvas>
+        <div class="scan-line"></div>
+        <div class="swath-label-l">CLOUD-OCCLUDED</div>
+        <div class="swath-label-r">AI-RECONSTRUCTED</div>
+      </div>
+      <div class="telemetry-foot">
+        <span>BAND <b>3,2,1</b></span>
+        <span>SENSOR <b>LISS-IV MX</b></span>
+        <span>CLOUD COVER <b>38%&rarr;0%</b></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================
+     ABOUT
+============================================================ -->
+<section class="section" id="about">
+  <div class="container">
+    <p class="eyebrow">PROBLEM &amp; MOTIVATION</p>
+    <div class="section-head">
+      <h2>Clouds block more than half of usable LISS-IV coverage</h2>
+      <p>Cloud cover is the single largest source of data loss in optical Earth observation. Reconstructing what's hidden &mdash; without inventing false detail &mdash; is the core challenge this platform addresses.</p>
+    </div>
+
+    <div class="about-lead-row">
+      <div class="glass stat-block reveal">
+        <div class="stat-row"><span class="label">Avg. cloud cover, Indian monsoon scenes</span><span class="val">35&ndash;60%</span></div>
+        <div class="stat-row"><span class="label">LISS-IV revisit cycle</span><span class="val">5 days</span></div>
+        <div class="stat-row"><span class="label">Usable scenes lost to cloud, Jun&ndash;Sep</span><span class="val">~42%</span></div>
+        <div class="stat-row"><span class="label">Avg. delay to next clear acquisition</span><span class="val">10&ndash;15 days</span></div>
+      </div>
+      <div class="reveal">
+        <h3 style="font-size:19px;margin-bottom:12px;">Why this matters for ISRO operations</h3>
+        <p style="color:var(--text-dim);font-size:14.5px;line-height:1.7;">Mission planners can't simply "wait for clear skies" &mdash; crop-stress windows, flood peaks, and disaster response timelines don't pause for weather. A reconstructed estimate delivered same-day is operationally more valuable than a clean image delivered two revisit-cycles late. This platform is built to slot into that decision window, not to replace ground-truth acquisition.</p>
+      </div>
+    </div>
+
+    <div class="about-grid">
+      <div class="glass card-hover about-card reveal">
+        <div class="icon-wrap">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+        </div>
+        <h3>Agriculture monitoring</h3>
+        <p>Crop-health indices need continuous time series. A single missed acquisition during a pest outbreak or irrigation decision window can mean acting a week too late.</p>
+      </div>
+      <div class="glass card-hover about-card reveal">
+        <div class="icon-wrap">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </div>
+        <h3>Disaster management</h3>
+        <p>Floods and cyclones are themselves cloud-generating events &mdash; the moments responders need imagery most are exactly when optical sensors are most occluded.</p>
+      </div>
+      <div class="glass card-hover about-card reveal">
+        <div class="icon-wrap">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/></svg>
+        </div>
+        <h3>National EO infrastructure</h3>
+        <p>Every reconstructed scene is one less re-tasking request competing for satellite time &mdash; lowering the operational cost of maintaining continuous national coverage.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     WORKFLOW
+============================================================ -->
+<section class="section" id="workflow">
+  <div class="container">
+    <p class="eyebrow">PROCESSING PIPELINE</p>
+    <div class="section-head">
+      <h2>From raw swath to cloud-free output</h2>
+      <p>Six stages, each independently inspectable. The pipeline is built so a failed detection or a low-confidence mask is visible before it ever reaches reconstruction.</p>
+    </div>
+
+    <div class="workflow-rail" id="workflowRail">
+      <div class="wf-step reveal">
+        <div class="wf-node">01</div>
+        <div class="wf-body">
+          <h3>Satellite image ingest</h3>
+          <p>Raw LISS-IV multispectral scene is ingested with metadata &mdash; band configuration, acquisition geometry, and sensor calibration intact.</p>
+          <span class="wf-tag">INPUT: .tif, 4-band MX</span>
+        </div>
+      </div>
+      <div class="wf-step reveal">
+        <div class="wf-node">02</div>
+        <div class="wf-body">
+          <h3>Cloud detection</h3>
+          <p>A classifier scans the scene to flag cloud-affected regions, distinguishing cloud from haze, snow, and bright bare soil.</p>
+          <span class="wf-tag">MODEL: Vision Transformer</span>
+        </div>
+      </div>
+      <div class="wf-step reveal">
+        <div class="wf-node">03</div>
+        <div class="wf-body">
+          <h3>Cloud segmentation</h3>
+          <p>Pixel-precise boundaries are drawn around every detected cloud region, separating thin cirrus from dense cumulus for adaptive handling.</p>
+          <span class="wf-tag">MODEL: DeepLabV3+</span>
+        </div>
+      </div>
+      <div class="wf-step reveal">
+        <div class="wf-node">04</div>
+        <div class="wf-body">
+          <h3>Cloud mask generation</h3>
+          <p>Segmentation output is converted into a binary occlusion mask &mdash; the exact region the generative model is permitted to repaint.</p>
+          <span class="wf-tag">OUTPUT: binary mask, 5.6m/px</span>
+        </div>
+      </div>
+      <div class="wf-step reveal">
+        <div class="wf-node">05</div>
+        <div class="wf-body">
+          <h3>Generative AI reconstruction</h3>
+          <p>Masked regions are reconstructed using GAN, diffusion, or inpainting networks conditioned on the unmasked surrounding terrain.</p>
+          <span class="wf-tag">MODELS: Pix2Pix &middot; LaMa &middot; Diffusion</span>
+        </div>
+      </div>
+      <div class="wf-step reveal">
+        <div class="wf-node">06</div>
+        <div class="wf-body">
+          <h3>Cloud-free output</h3>
+          <p>A composited, full-resolution scene is returned with confidence metadata flagging which pixels are observed versus reconstructed.</p>
+          <span class="wf-tag">OUTPUT: cloud-free .tif + confidence map</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================
+     AI MODELS
+============================================================ -->
+<section class="section" id="models">
+  <div class="container">
+    <p class="eyebrow">MODEL ZOO</p>
+    <div class="section-head">
+      <h2>Eight architectures, each suited to a different stage</h2>
+      <p>Detection, segmentation, and reconstruction call for different model families. Select a card for architecture, accuracy, and trade-off detail.</p>
+    </div>
+    <div class="model-grid" id="modelGrid"></div>
+  </div>
+</section>
+
+<!-- ============================================================
+     DATASETS
+============================================================ -->
+<section class="section" id="datasets">
+  <div class="container">
+    <p class="eyebrow">TRAINING &amp; BENCHMARK DATA</p>
+    <div class="section-head">
+      <h2>Trained and validated across seven datasets</h2>
+      <p>LISS-IV scenes anchor domain accuracy; open multispectral and cloud-specific datasets extend generalization and benchmarking.</p>
+    </div>
+    <div class="dataset-grid" id="datasetGrid"></div>
+  </div>
+</section>
+
+
+<!-- ============================================================
+     GENERATIVE AI SECTION
+============================================================ -->
+<section class="section" id="generative">
+  <div class="container">
+    <p class="eyebrow">HOW THE RECONSTRUCTION WORKS</p>
+    <div class="section-head">
+      <h2>Generator, discriminator, and the diffusion alternative</h2>
+      <p>Adversarial reconstruction pits two networks against each other; diffusion reconstruction instead denoises a masked region step by step.</p>
+    </div>
+
+    <div class="genai-flow reveal">
+      <div class="genai-node glass">
+        <div class="gn-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 15a4 4 0 0 0 4 4h9a5 5 0 0 0 1-9.9A6 6 0 0 0 6 9.7 4 4 0 0 0 3 15z"/></svg></div>
+        <div class="gn-label">Cloudy image</div>
+        <div class="gn-sub">INPUT</div>
+      </div>
+      <div class="genai-arrow"><svg width="22" height="14" viewBox="0 0 24 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 7h20m-6-6 6 6-6 6"/></svg></div>
+      <div class="genai-node glass">
+        <div class="gn-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg></div>
+        <div class="gn-label">Generator</div>
+        <div class="gn-sub">FILLS MASK</div>
+      </div>
+      <div class="genai-arrow"><svg width="22" height="14" viewBox="0 0 24 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 7h20m-6-6 6 6-6 6"/></svg></div>
+      <div class="genai-node glass">
+        <div class="gn-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 4 9v6l8 6 8-6V9l-8-6z"/></svg></div>
+        <div class="gn-label">Reconstruction</div>
+        <div class="gn-sub">CANDIDATE OUTPUT</div>
+      </div>
+      <div class="genai-arrow"><svg width="22" height="14" viewBox="0 0 24 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 7h20m-6-6 6 6-6 6"/></svg></div>
+      <div class="genai-node glass">
+        <div class="gn-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11z"/></svg></div>
+        <div class="gn-label">Discriminator</div>
+        <div class="gn-sub">REAL OR FAKE?</div>
+      </div>
+      <div class="genai-arrow"><svg width="22" height="14" viewBox="0 0 24 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 7h20m-6-6 6 6-6 6"/></svg></div>
+      <div class="genai-node glass" style="border-color:rgba(74,222,156,0.4);">
+        <div class="gn-icon" style="color:var(--signal);"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg></div>
+        <div class="gn-label">Final image</div>
+        <div class="gn-sub">CLOUD-FREE</div>
+      </div>
+    </div>
+
+    <div class="glass diffusion-explain reveal">
+      <div>
+        <h3 style="font-size:19px;margin-bottom:10px;">Diffusion: denoising instead of guessing in one shot</h3>
+        <p style="font-size:14.5px;color:var(--text-dim);line-height:1.7;">Rather than generating the missing region in a single forward pass, a diffusion model starts from noise inside the masked area and removes it gradually, at each step conditioning on the surrounding unmasked pixels. The result tends to be more stable on large, irregular cloud masks where GAN-based inpainting can produce visible seams.</p>
+      </div>
+      <div>
+        <div class="diffusion-steps">
+          <div class="diffusion-dot" style="background:repeating-linear-gradient(45deg,#1a2433,#1a2433 4px,#222e40 4px,#222e40 8px);"></div>
+          <span class="arrow-sm">→</span>
+          <div class="diffusion-dot" style="background:linear-gradient(135deg,#16313a,#1c4248);"></div>
+          <span class="arrow-sm">→</span>
+          <div class="diffusion-dot" style="background:linear-gradient(135deg,#143a40,#225a55);"></div>
+          <span class="arrow-sm">→</span>
+          <div class="diffusion-dot" style="background:linear-gradient(135deg,#0f3d35,#2c7a5e);"></div>
+          <span class="arrow-sm">→</span>
+          <div class="diffusion-dot" style="background:linear-gradient(135deg,#0d2b30,#2c7a5e);border-color:var(--signal);"></div>
+        </div>
+        <p class="mono-tag" style="margin-top:12px;">t=1000 (pure noise) &rarr; t=0 (reconstructed)</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     IMAGE COMPARISON
+============================================================ -->
+<section class="section" id="comparison">
+  <div class="container">
+    <p class="eyebrow">RESULT PREVIEW</p>
+    <div class="section-head">
+      <h2>Drag to compare</h2>
+      <p>An illustrative before/after render. Drag the handle or use arrow keys to reveal the reconstructed scene.</p>
+    </div>
+    <div class="compare-wrap">
+      <div class="glass compare-frame" id="compareFrame" tabindex="0" role="slider" aria-label="Drag to compare cloudy and reconstructed image" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50">
+        <div class="compare-img compare-after"></div>
+        <div class="compare-clip" id="compareClip">
+          <div class="compare-img compare-before"></div>
+        </div>
+        <div class="compare-handle" id="compareHandle">
+          <span class="ch-arrows">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M8 7 4 12l4 5M16 7l4 5-4 5"/></svg>
+          </span>
+        </div>
+        <span class="compare-tag left">CLOUDY</span>
+        <span class="compare-tag right">RECONSTRUCTED</span>
+      </div>
+      <p class="compare-hint">Click and drag, or focus the slider and use ← → keys</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     LIVE DEMO
+============================================================ -->
+<section class="section" id="demo">
+  <div class="container">
+    <p class="eyebrow">INTERACTIVE</p>
+    <div class="section-head">
+      <h2>Run the pipeline on a sample scene</h2>
+      <p>This demo runs against mock inference until the FastAPI backend is connected. Upload any image to see the full pipeline simulate end to end.</p>
+    </div>
+
+    <div class="glass demo-shell">
+      <div class="demo-panel">
+        <div class="dropzone" id="dropzone">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 16V4m0 0L7 9m5-5 5 5M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+          <div class="dz-title">Drop a satellite image here</div>
+          <div class="dz-sub">or click to browse &middot; PNG, JPG, TIF</div>
+          <input type="file" id="fileInput" accept="image/*" hidden />
+        </div>
+
+        <div class="demo-steps" id="demoSteps">
+          <div class="demo-step-row" data-step="0"><span class="ds-dot"></span> Image uploaded</div>
+          <div class="demo-step-row" data-step="1"><span class="ds-dot"></span> Cloud detection</div>
+          <div class="demo-step-row" data-step="2"><span class="ds-dot"></span> Cloud mask generated</div>
+          <div class="demo-step-row" data-step="3"><span class="ds-dot"></span> AI reconstruction</div>
+          <div class="demo-step-row" data-step="4"><span class="ds-dot"></span> Cloud-free output ready</div>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="progress-pct" id="progressPct">Awaiting upload</div>
+      </div>
+
+      <div class="demo-panel">
+        <div class="demo-result-box" id="demoResult">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg>
+          <div class="dr-title">Result preview</div>
+          <div class="dr-sub">Your reconstructed output will appear here after processing completes.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================
+     FEATURES
+============================================================ -->
+<section class="section" id="features">
+  <div class="container">
+    <p class="eyebrow">CAPABILITIES</p>
+    <div class="section-head">
+      <h2>What the pipeline handles end to end</h2>
+      <p>Every stage from detection to delivery is modular &mdash; swap a model, rerun a stage, or export an intermediate result independently.</p>
+    </div>
+    <div class="features-grid" id="featuresGrid"></div>
+  </div>
+</section>
+
+<!-- ============================================================
+     APPLICATIONS
+============================================================ -->
+<section class="section" id="applications">
+  <div class="container">
+    <p class="eyebrow">USE CASES</p>
+    <div class="section-head">
+      <h2>Where cloud-free continuity matters most</h2>
+      <p>Any program relying on regular optical revisit cycles benefits from a fallback that doesn't simply discard the occluded scene.</p>
+    </div>
+    <div class="apps-grid" id="appsGrid"></div>
+  </div>
+</section>
+
+<!-- ============================================================
+     PERFORMANCE
+============================================================ -->
+<section class="section" id="performance">
+  <div class="container">
+    <p class="eyebrow">BENCHMARKS</p>
+    <div class="section-head">
+      <h2>Reconstruction accuracy across test scenes</h2>
+      <p>Evaluated against held-out LISS-IV scenes with synthetic and naturally-occurring cloud masks.</p>
+    </div>
+
+    <div class="metrics-grid" id="metricsGrid"></div>
+
+    <div class="glass chart-card reveal">
+      <h3>Model comparison &mdash; mean SSIM by architecture</h3>
+      <div id="barChart"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     TECH STACK
+============================================================ -->
+<section class="section" id="techstack">
+  <div class="container">
+    <p class="eyebrow">BUILT WITH</p>
+    <div class="section-head">
+      <h2>Tech stack</h2>
+      <p>A Python/PyTorch inference core behind a FastAPI service layer, with a React front end for visualization and review.</p>
+    </div>
+    <div class="tech-grid" id="techGrid"></div>
+  </div>
+</section>
+
+
+<!-- ============================================================
+     TEAM
+============================================================ -->
+<section class="section" id="team">
+  <div class="container">
+    <p class="eyebrow">THE TEAM</p>
+    <div class="section-head">
+      <h2>Built by a small applied-AI team</h2>
+      <p>Reach out for collaboration, dataset access, or deployment discussions.</p>
+    </div>
+    <div class="team-grid" id="teamGrid"></div>
+  </div>
+</section>
+
+<!-- ============================================================
+     RESEARCH
+============================================================ -->
+<section class="section" id="research">
+  <div class="container">
+    <p class="eyebrow">RESEARCH</p>
+    <div class="section-head">
+      <h2>Papers, comparisons, and what's next</h2>
+      <p>Background literature this pipeline draws on, alongside open directions for future work.</p>
+    </div>
+    <div class="research-grid">
+      <div class="glass reveal" style="padding:30px;">
+        <h3 style="font-size:16px;margin-bottom:6px;">Reference papers</h3>
+        <div class="paper-list" id="paperList"></div>
+      </div>
+      <div class="glass reveal" style="padding:30px;">
+        <h3 style="font-size:16px;margin-bottom:18px;">Future scope</h3>
+        <div class="future-list" id="futureList"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     FAQ
+============================================================ -->
+<section class="section" id="faq">
+  <div class="container">
+    <p class="eyebrow">FAQ</p>
+    <div class="section-head">
+      <h2>Frequently asked questions</h2>
+    </div>
+    <div class="faq-list" id="faqList"></div>
+  </div>
+</section>
+
+<!-- ============================================================
+     CONTACT
+============================================================ -->
+<section class="section" id="contact" style="border-bottom:none;">
+  <div class="container">
+    <p class="eyebrow">GET IN TOUCH</p>
+    <div class="section-head">
+      <h2>Questions, collaborations, or access requests</h2>
+      <p>Send a message and the team will get back to you. For dataset or API access, mention your use case.</p>
+    </div>
+
+    <div class="contact-grid">
+      <form class="glass contact-form reveal" id="contactForm">
+        <div class="form-row">
+          <label for="cf-name">Name</label>
+          <input type="text" id="cf-name" placeholder="Your full name" required />
+        </div>
+        <div class="form-row">
+          <label for="cf-email">Email</label>
+          <input type="email" id="cf-email" placeholder="you@organization.com" required />
+        </div>
+        <div class="form-row">
+          <label for="cf-msg">Message</label>
+          <textarea id="cf-msg" rows="4" placeholder="Tell us what you're working on" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" style="justify-content:center;">Send message</button>
+        <span class="form-status" id="formStatus">Message sent. We'll be in touch shortly.</span>
+      </form>
+
+      <div class="contact-side">
+        <div class="map-placeholder reveal">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7-6.4-7-12a7 7 0 1 1 14 0c0 5.6-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
+          <span class="mono-tag">MAP PLACEHOLDER</span>
+        </div>
+        <div class="glass contact-info-card reveal">
+          <div class="contact-info-row">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z" opacity="0"/><path d="m4 6 8 7 8-7M4 6h16v12H4z"/></svg>
+            contact@cloudclear.ai
+          </div>
+          <div class="social-row">
+            <a href="#" aria-label="GitHub"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.58 9.58 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85v2.75c0 .26.18.58.69.48A10 10 0 0 0 12 2z"/></svg></a>
+            <a href="#" aria-label="LinkedIn"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9h4v12H3V9zm6.5 0H13v1.71h.05c.5-.95 1.74-1.95 3.58-1.95 3.83 0 4.37 2.52 4.37 5.8V21h-4v-5.6c0-1.34-.02-3.05-1.87-3.05-1.87 0-2.16 1.46-2.16 2.96V21h-4V9z"/></svg></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     FOOTER
+============================================================ -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="#top" class="brand">
+          <span class="brand-mark" aria-hidden="true"></span>
+          CloudClear<span style="color:var(--cyan-bright)">AI</span>
+        </a>
+        <p>Generative AI-based cloud removal and reconstruction for LISS-IV satellite imagery. Research-grade tooling for Earth observation continuity.</p>
+      </div>
+      <div class="footer-col">
+        <h5>Quick links</h5>
+        <a href="#about">About</a>
+        <a href="#workflow">Workflow</a>
+        <a href="#models">AI Models</a>
+        <a href="#demo">Live Demo</a>
+      </div>
+      <div class="footer-col">
+        <h5>Resources</h5>
+        <a href="#research">Research</a>
+        <a href="#">Documentation</a>
+        <a href="#">GitHub</a>
+        <a href="#datasets">Datasets</a>
+      </div>
+      <div class="footer-col">
+        <h5>Legal</h5>
+        <a href="#">Privacy policy</a>
+        <a href="#">Terms of use</a>
+        <a href="#contact">Contact</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; 2026 CloudClear AI. Built for research &amp; demonstration purposes.</span>
+      <span class="fb-links">
+        <a href="#">GitHub</a>
+        <a href="#">LinkedIn</a>
+      </span>
+    </div>
+  </div>
+</footer>
+
+</div><!-- /marketingView -->
+
+<!-- ============================================================
+     AUTH VIEW (login / register) — hidden until requested
+============================================================ -->
+<div id="authView" class="auth-view" hidden>
+  <div class="glass auth-card">
+    <span class="auth-back" id="authBackBtn">&larr; Back to home</span>
+    <div class="brand" style="margin-bottom:20px;">
+      <span class="brand-mark" aria-hidden="true"></span>
+      CloudClear<span style="color:var(--cyan-bright)">AI</span>
+    </div>
+
+    <div id="loginPane">
+      <h1>Log in</h1>
+      <p class="auth-sub">Access your projects, uploads, and reconstruction history.</p>
+      <form id="loginForm">
+        <div class="form-row">
+          <label for="loginEmail">Email</label>
+          <input type="email" id="loginEmail" required placeholder="you@example.com" />
+        </div>
+        <div class="form-row">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" required placeholder="Your password" />
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="loginSubmitBtn">Log in</button>
+        <div class="auth-msg" id="loginMsg"></div>
+      </form>
+      <div class="auth-switch">Don't have an account? <a id="goToRegister">Sign up</a></div>
+    </div>
+
+    <div id="registerPane" hidden>
+      <h1>Create your account</h1>
+      <p class="auth-sub">Sign up to upload imagery and run reconstructions.</p>
+      <form id="registerForm">
+        <div class="form-row">
+          <label for="regName">Full name</label>
+          <input type="text" id="regName" required minlength="2" maxlength="100" placeholder="Your full name" />
+        </div>
+        <div class="form-row">
+          <label for="regEmail">Email</label>
+          <input type="email" id="regEmail" required placeholder="you@example.com" />
+        </div>
+        <div class="form-row">
+          <label for="regPassword">Password</label>
+          <input type="password" id="regPassword" required minlength="8" placeholder="At least 8 characters, 1 letter + 1 number" />
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="registerSubmitBtn">Create account</button>
+        <div class="auth-msg" id="registerMsg"></div>
+      </form>
+      <div class="auth-switch">Already have an account? <a id="goToLogin">Log in</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     APP VIEW (authenticated dashboard) — hidden until session confirmed
+============================================================ -->
+<div id="appView" class="app-view" hidden>
+  <div class="container">
+    <div class="app-head">
+      <h1 id="greeting">Welcome</h1>
+      <p>Upload a LISS-IV scene and run the real reconstruction pipeline against your account.</p>
+    </div>
+
+    <div class="glass" style="padding:28px; margin-bottom:20px;">
+      <p class="eyebrow">ACCOUNT</p>
+      <div class="row"><span>Name</span><span id="uName"></span></div>
+      <div class="row"><span>Email</span><span id="uEmail"></span></div>
+      <div class="row"><span>Role</span><span id="uRole"></span></div>
+      <div class="row"><span>Email verified</span><span id="uVerified"></span></div>
+    </div>
+
+    <div class="glass demo-shell" style="margin-bottom:20px;">
+      <div class="demo-panel">
+        <p class="eyebrow">RUN PIPELINE</p>
+        <div class="dropzone" id="appDropzone" tabindex="0" role="button" aria-label="Upload a satellite image to run reconstruction">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 16V4m0 0L7 9m5-5 5 5M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+          <div class="dz-title">Drop a satellite image here</div>
+          <div class="dz-sub">or click to browse &middot; PNG, JPG, TIF</div>
+          <input type="file" id="appFileInput" accept="image/*" hidden />
+        </div>
+
+        <div class="demo-steps" id="appDemoSteps">
+          <div class="demo-step-row" data-step="0"><span class="ds-dot"></span> Image uploaded</div>
+          <div class="demo-step-row" data-step="1"><span class="ds-dot"></span> Sent to backend</div>
+          <div class="demo-step-row" data-step="2"><span class="ds-dot"></span> Cloud detection &amp; masking</div>
+          <div class="demo-step-row" data-step="3"><span class="ds-dot"></span> AI reconstruction</div>
+          <div class="demo-step-row" data-step="4"><span class="ds-dot"></span> Cloud-free output ready</div>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="appProgressFill"></div></div>
+        <div class="progress-pct" id="appProgressPct">Awaiting upload</div>
+      </div>
+
+      <div class="demo-panel">
+        <div class="demo-result-box" id="appDemoResult">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg>
+          <div class="dr-title">Result preview</div>
+          <div class="dr-sub">Your reconstructed output will appear here after processing completes.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass" style="padding:28px;">
+      <p style="font-size:13px; color:var(--text-faint); line-height:1.6;">
+        This calls your real backend at <code id="appEndpointLabel"></code> with your access token — no mock timers.
+        If your FastAPI reconstruction route uses a different path or response shape, it just needs a small tweak
+        in the script below.
+      </p>
+    </div>
+  </div>
+</div>
+
+</main>
+
+
+<button class="back-to-top" id="backToTop" aria-label="Back to top">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+</button>
+
+<script>
+(function(){
+  "use strict";
+  var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ============================================================
+     NAV: scroll state + mobile menu
+  ============================================================ */
+  var nav = document.getElementById('mainNav');
+  var scrollProgress = document.getElementById('scrollProgress');
+  var backToTop = document.getElementById('backToTop');
+
+  function onScroll(){
+    var y = window.scrollY || window.pageYOffset;
+    nav.classList.toggle('scrolled', y > 12);
+    backToTop.classList.toggle('show', y > 480);
+    var docH = document.documentElement.scrollHeight - window.innerHeight;
+    var pct = docH > 0 ? (y / docH) * 100 : 0;
+    scrollProgress.style.width = pct + '%';
+  }
+  window.addEventListener('scroll', onScroll, { passive:true });
+  onScroll();
+
+  backToTop.addEventListener('click', function(){
+    window.scrollTo({ top:0, behavior: reducedMotion ? 'auto' : 'smooth' });
+  });
+
+  var navToggle = document.getElementById('navToggle');
+  var mobileMenu = document.getElementById('mobileMenu');
+  navToggle.addEventListener('click', function(){
+    var isHidden = mobileMenu.hasAttribute('hidden');
+    if(isHidden){ mobileMenu.removeAttribute('hidden'); navToggle.setAttribute('aria-expanded','true'); }
+    else { mobileMenu.setAttribute('hidden',''); navToggle.setAttribute('aria-expanded','false'); }
+  });
+  mobileMenu.querySelectorAll('a').forEach(function(a){
+    a.addEventListener('click', function(){ mobileMenu.setAttribute('hidden',''); navToggle.setAttribute('aria-expanded','false'); });
+  });
+
+  /* ============================================================
+     SCROLL REVEAL
+     NOTE: initialized after all dynamic content below is injected,
+     at the bottom of this script (search "INIT SCROLL REVEAL").
+  ============================================================ */
+
+  /* ============================================================
+     WORKFLOW STEP ACTIVATION (separate from generic reveal, adds .in class to .wf-step)
+  ============================================================ */
+  var wfSteps = document.querySelectorAll('.wf-step');
+  if('IntersectionObserver' in window){
+    var wfIo = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting) e.target.classList.add('in');
+      });
+    }, { threshold:0.5 });
+    wfSteps.forEach(function(el){ wfIo.observe(el); });
+  } else {
+    wfSteps.forEach(function(el){ el.classList.add('in'); });
+  }
+
+  /* ============================================================
+     ANIMATED COUNTERS (hero stats)
+  ============================================================ */
+  var counters = document.querySelectorAll('[data-count]');
+  function animateCounter(el){
+    var target = parseFloat(el.getAttribute('data-count'));
+    var decimals = parseInt(el.getAttribute('data-decimals') || '0', 10);
+    var unitSpan = el.querySelector('.unit');
+    var unitHTML = unitSpan ? unitSpan.outerHTML : '';
+    if(reducedMotion){ el.innerHTML = target.toFixed(decimals) + unitHTML; return; }
+    var dur = 1400, start = null;
+    function step(ts){
+      if(!start) start = ts;
+      var p = Math.min((ts-start)/dur, 1);
+      var eased = 1 - Math.pow(1-p, 3);
+      var val = target * eased;
+      el.innerHTML = val.toFixed(decimals) + unitHTML;
+      if(p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+  if('IntersectionObserver' in window){
+    var counterIo = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){ animateCounter(e.target); counterIo.unobserve(e.target); }
+      });
+    }, { threshold:0.6 });
+    counters.forEach(function(el){ counterIo.observe(el); });
+  } else {
+    counters.forEach(animateCounter);
+  }
+
+  /* ============================================================
+     HERO CANVAS: cloud-occluded -> reconstructed swath
+  ============================================================ */
+  var canvas = document.getElementById('heroCanvas');
+  if(canvas){
+    var ctx = canvas.getContext('2d');
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var rafId = null;
+
+    function resize(){
+      var rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      canvas.style.width = rect.width + 'px';
+      canvas.style.height = rect.height + 'px';
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    // pseudo-random terrain blocks (deterministic) to suggest a satellite tile mosaic
+    function seededRandom(seed){
+      var s = seed;
+      return function(){
+        s = (s * 9301 + 49297) % 233280;
+        return s / 233280;
+      };
+    }
+    var rand = seededRandom(42);
+    var cols = 26, rows = 26;
+    var terrain = [];
+    for(var i=0;i<cols;i++){
+      terrain[i] = [];
+      for(var j=0;j<rows;j++){
+        var n = rand();
+        var hue;
+        if(n < 0.45) hue = { r:26+n*40, g:58+n*50, b:46+n*30 };       // vegetation greens
+        else if(n < 0.7) hue = { r:54+n*60, g:64+n*50, b:90+n*60 };   // urban/grey-blue
+        else if(n < 0.85) hue = { r:90+n*60, g:96+n*50, b:120+n*40 }; // bright bare soil
+        else hue = { r:20+n*30, g:50+n*60, b:90+n*80 };               // water
+        terrain[i][j] = hue;
+      }
+    }
+    // cloud blobs (a few overlapping soft circles) — will fade based on scan progress
+    var clouds = [];
+    for(var c=0;c<6;c++){
+      clouds.push({
+        x: rand(), y: rand()*0.6, r: 0.12 + rand()*0.16
+      });
+    }
+
+    function draw(progress){
+      var w = canvas.width, h = canvas.height;
+      ctx.clearRect(0,0,w,h);
+      var cw = w/cols, ch = h/rows;
+      for(var i=0;i<cols;i++){
+        for(var j=0;j<rows;j++){
+          var t = terrain[i][j];
+          ctx.fillStyle = 'rgb(' + Math.floor(t.r) + ',' + Math.floor(t.g) + ',' + Math.floor(t.b) + ')';
+          ctx.fillRect(i*cw, j*ch, cw+1, ch+1);
+        }
+      }
+      // scanline progress 0..1 maps to vertical reveal — above the line is "reconstructed" (clouds gone), below is occluded
+      var lineY = progress * h;
+      // draw clouds only in the occluded (below line) region, fading as scan passes
+      clouds.forEach(function(cl){
+        var cy = cl.y * h;
+        var localFade = cy < lineY ? Math.max(0, 1 - (lineY-cy)/(h*0.18)) : 1;
+        if(localFade <= 0.02) return;
+        var cx = cl.x * w, cr = cl.r * w;
+        var grad = ctx.createRadialGradient(cx,cy,0,cx,cy,cr);
+        grad.addColorStop(0, 'rgba(225,232,240,' + (0.85*localFade) + ')');
+        grad.addColorStop(0.6, 'rgba(200,212,226,' + (0.55*localFade) + ')');
+        grad.addColorStop(1, 'rgba(200,212,226,0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(cx,cy,cr,0,Math.PI*2);
+        ctx.fill();
+      });
+    }
+
+    function loop(ts){
+      // sync with the CSS scan-line animation timing (5.5s cycle, see .scan-line keyframes)
+      var cycle = 5500;
+      var t = (ts % cycle) / cycle;
+      // approximate the same easing windows as the CSS keyframes (4%→74%→4%)
+      var progress;
+      if(t < 0.08) progress = 0.04;
+      else if(t < 0.5) progress = 0.04 + (t-0.08)/(0.5-0.08) * (0.74-0.04);
+      else if(t < 0.92) progress = 0.74 - (t-0.5)/(0.92-0.5) * (0.74-0.04);
+      else progress = 0.04;
+      draw(progress);
+      rafId = requestAnimationFrame(loop);
+    }
+    if(reducedMotion){ draw(0.5); }
+    else { rafId = requestAnimationFrame(loop); }
+  }
+
+  /* ============================================================
+     DATA: AI MODELS
+  ============================================================ */
+  var MODELS = [
+    { name:'U-Net', purpose:'Pixel-precise cloud segmentation via encoder-decoder with skip connections.', architecture:'Symmetric encoder-decoder CNN with skip connections preserving spatial detail lost during downsampling.', advantages:'Strong on small datasets; precise boundaries; fast to train.', accuracy:'IoU 0.89 on WHU Cloud test split', complexity:2 },
+    { name:'DeepLabV3+', purpose:'Multi-scale cloud segmentation using atrous convolution.', architecture:'Atrous Spatial Pyramid Pooling with a decoder module for sharper segmentation boundaries.', advantages:'Captures both fine cloud edges and large cloud banks in one pass.', accuracy:'mIoU 0.91 on SPARCS benchmark', complexity:3 },
+    { name:'Mask R-CNN', purpose:'Instance-level detection and masking of individual cloud formations.', architecture:'Region proposal network plus a segmentation branch over each detected region.', advantages:'Separates overlapping cloud instances; useful for cirrus vs. cumulus distinction.', accuracy:'AP 0.83 across cloud classes', complexity:4 },
+    { name:'Pix2Pix', purpose:'Conditional GAN for direct cloudy-to-clean image translation.', architecture:'U-Net generator with a PatchGAN discriminator trained on paired cloudy/clean image data.', advantages:'Fast inference; good texture fidelity on small masked regions.', accuracy:'PSNR 29.8 dB on LISS-IV val set', complexity:3 },
+    { name:'CycleGAN', purpose:'Unpaired cloudy-to-clean translation when matched ground truth is unavailable.', architecture:'Two generator-discriminator pairs with a cycle-consistency loss enforcing reversible translation.', advantages:'No paired training data required; generalizes across sensors.', accuracy:'SSIM 0.87 on cross-domain test', complexity:4 },
+    { name:'Diffusion Models', purpose:'Iterative denoising-based reconstruction for large, irregular cloud masks.', architecture:'U-Net backbone trained to reverse a forward noising process, conditioned on unmasked context.', advantages:'Highest visual stability on large occlusions; fewer seam artifacts.', accuracy:'PSNR 31.4 dB, SSIM 0.94', complexity:5 },
+    { name:'LaMa', purpose:'Large-mask inpainting using Fourier convolutions for global context.', architecture:'Fast Fourier Convolution layers giving the receptive field full-image reach even early in the network.', advantages:'Excels specifically on large masked regions, common with thick cloud cover.', accuracy:'PSNR 30.6 dB on large-mask subset', complexity:4 },
+    { name:'Vision Transformer', purpose:'Global self-attention for initial cloud detection across the full scene.', architecture:'Patch-based transformer encoder applying self-attention across the entire image at once.', advantages:'Captures long-range context; strong at distinguishing thin cirrus from haze.', accuracy:'F1 0.92 on detection benchmark', complexity:5 }
+  ];
+
+  var modelGrid = document.getElementById('modelGrid');
+  MODELS.forEach(function(m, idx){
+    var card = document.createElement('div');
+    card.className = 'glass card-hover model-card reveal';
+    card.setAttribute('tabindex','0');
+    card.setAttribute('role','button');
+    card.setAttribute('aria-haspopup','dialog');
+    card.innerHTML =
+      '<div class="model-name">'+m.name+'</div>' +
+      '<div class="model-purpose">'+m.purpose+'</div>' +
+      '<div class="model-meta"><span>VIEW DETAILS</span>' +
+      '<span class="complexity-dots">'+[1,2,3,4,5].map(function(d){ return '<span class="'+(d<=m.complexity?'fill':'')+'"></span>'; }).join('')+'</span></div>';
+    function open(){ openModelModal(m); }
+    card.addEventListener('click', open);
+    card.addEventListener('keydown', function(e){ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); open(); } });
+    modelGrid.appendChild(card);
+  });
+
+  // Modal
+  var modalOverlay = document.createElement('div');
+  modalOverlay.className = 'modal-overlay';
+  modalOverlay.innerHTML =
+    '<div class="glass modal-box" role="dialog" aria-modal="true" aria-labelledby="modalTitle">' +
+      '<button class="modal-close" id="modalClose" aria-label="Close">' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg>' +
+      '</button>' +
+      '<h3 id="modalTitle"></h3>' +
+      '<div class="modal-sub" id="modalSub"></div>' +
+      '<div class="modal-field"><div class="mf-label">ARCHITECTURE</div><div class="mf-val" id="modalArch"></div></div>' +
+      '<div class="modal-field"><div class="mf-label">ADVANTAGES</div><div class="mf-val" id="modalAdv"></div></div>' +
+      '<div class="modal-field"><div class="mf-label">ACCURACY</div><div class="mf-val" id="modalAcc"></div></div>' +
+    '</div>';
+  document.body.appendChild(modalOverlay);
+  var lastFocused = null;
+  function openModelModal(m){
+    document.getElementById('modalTitle').textContent = m.name;
+    document.getElementById('modalSub').textContent = m.purpose;
+    document.getElementById('modalArch').textContent = m.architecture;
+    document.getElementById('modalAdv').textContent = m.advantages;
+    document.getElementById('modalAcc').textContent = m.accuracy;
+    lastFocused = document.activeElement;
+    modalOverlay.classList.add('show');
+    document.getElementById('modalClose').focus();
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal(){
+    modalOverlay.classList.remove('show');
+    document.body.style.overflow = '';
+    if(lastFocused) lastFocused.focus();
+  }
+  modalOverlay.addEventListener('click', function(e){ if(e.target === modalOverlay) closeModal(); });
+  document.getElementById('modalClose').addEventListener('click', closeModal);
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && modalOverlay.classList.contains('show')) closeModal(); });
+
+  /* ============================================================
+     DATA: DATASETS
+  ============================================================ */
+  var DATASETS = [
+    { name:'LISS-IV', desc:'ISRO Resourcesat-2/2A multispectral sensor data — the primary domain target for this pipeline.', res:'5.6 m/px', avail:'Restricted', use:'Domain-specific training & validation' },
+    { name:'Sentinel-2', desc:'ESA open multispectral imagery with frequent revisit, used for cross-sensor generalization.', res:'10 m/px', avail:'Open', use:'Pretraining & generalization' },
+    { name:'Landsat-8', desc:'USGS/NASA long-running multispectral archive, useful for historical comparison.', res:'30 m/px', avail:'Open', use:'Cross-sensor benchmarking' },
+    { name:'SEN12MS', desc:'Paired Sentinel-1/2 patches with land cover labels across four seasons.', res:'10 m/px', avail:'Open', use:'Multi-season robustness testing' },
+    { name:'RICE Dataset', desc:'Removal of Clouds dataset — paired cloudy/cloud-free image sets purpose-built for reconstruction.', res:'Variable', avail:'Open', use:'Reconstruction model training' },
+    { name:'WHU Cloud Dataset', desc:'Wuhan University labeled cloud and shadow masks across diverse terrain types.', res:'Variable', avail:'Open', use:'Cloud detection & segmentation' },
+    { name:'SPARCS', desc:'Spatial Procedures for Automated Removal of Cloud and Shadow, Landsat-based.', res:'30 m/px', avail:'Open', use:'Segmentation benchmarking' }
+  ];
+  var datasetGrid = document.getElementById('datasetGrid');
+  DATASETS.forEach(function(d){
+    var card = document.createElement('div');
+    card.className = 'glass card-hover dataset-card reveal';
+    card.innerHTML =
+      '<div class="ds-head"><span class="ds-name">'+d.name+'</span><span class="ds-pill'+(d.avail==='Restricted'?' limited':'')+'">'+d.avail.toUpperCase()+'</span></div>' +
+      '<p class="ds-desc">'+d.desc+'</p>' +
+      '<div class="ds-meta-row"><span>RESOLUTION</span><b>'+d.res+'</b></div>' +
+      '<div class="ds-meta-row"><span>USE CASE</span><b>'+d.use+'</b></div>' +
+      '<a href="#" class="ds-link">Download / access info →</a>';
+    datasetGrid.appendChild(card);
+  });
+
+  /* ============================================================
+     DATA: FEATURES
+  ============================================================ */
+  var FEATURES = [
+    { icon:'M9.88 9.88a3 3 0 1 0 4.24 4.24M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68M6.61 6.61A13.5 13.5 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61M1 1l22 22', title:'Cloud detection', desc:'Flags occluded regions across the full scene before any reconstruction begins.' },
+    { icon:'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z', title:'Cloud segmentation', desc:'Pixel-level boundaries separate thin cirrus from dense cumulus formations.' },
+    { icon:'M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6', title:'Image inpainting', desc:'Fills small-to-medium masked regions using context-aware patch synthesis.' },
+    { icon:'M17 8l4 4-4 4M7 8l-4 4 4 4M14 4l-4 16', title:'GAN reconstruction', desc:'Adversarially trained generation for sharp, realistic texture recovery.' },
+    { icon:'M12 2a10 10 0 1 0 10 10', title:'Diffusion reconstruction', desc:'Step-wise denoising for stable results on large, irregular cloud masks.' },
+    { icon:'M13 2 3 14h7l-1 8 10-12h-7l1-8z', title:'Fast processing', desc:'Optimized inference pipeline targets sub-minute turnaround per scene.' },
+    { icon:'M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7', title:'High resolution', desc:'Preserves native 5.6 m/px LISS-IV resolution through the full pipeline.' },
+    { icon:'M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15z', title:'Research ready', desc:'Exports confidence maps and intermediate stages for reproducible evaluation.' }
+  ];
+  var featuresGrid = document.getElementById('featuresGrid');
+  FEATURES.forEach(function(f){
+    var card = document.createElement('div');
+    card.className = 'glass card-hover feature-card reveal';
+    card.innerHTML =
+      '<div class="icon-wrap"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="'+f.icon+'"/></svg></div>' +
+      '<h4>'+f.title+'</h4><p>'+f.desc+'</p>';
+    featuresGrid.appendChild(card);
+  });
+
+  /* ============================================================
+     DATA: APPLICATIONS
+  ============================================================ */
+  var APPS = [
+    { icon:'M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z', label:'Agriculture' },
+    { icon:'M12 2 4 6v6c0 5.5 3.5 8.5 8 10 4.5-1.5 8-4.5 8-10V6l-8-4z', label:'Forest monitoring' },
+    { icon:'M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6', label:'Urban planning' },
+    { icon:'M2 12h2a8 8 0 0 1 16 0h2M5 16c1.5 2 3.5 3 7 3s5.5-1 7-3', label:'Flood detection' },
+    { icon:'M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5', label:'Disaster management' },
+    { icon:'M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6 5.6 18.4', label:'Climate research' },
+    { icon:'M12 2 4 6v6c0 5.5 3.5 8.5 8 10 4.5-1.5 8-4.5 8-10V6l-8-4zM9 12l2 2 4-4', label:'Military surveillance' },
+    { icon:'M12 2s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z', label:'Water resource mgmt.' }
+  ];
+  var appsGrid = document.getElementById('appsGrid');
+  APPS.forEach(function(a){
+    var pill = document.createElement('div');
+    pill.className = 'glass card-hover app-pill reveal';
+    pill.innerHTML =
+      '<div class="icon-wrap"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="'+a.icon+'"/></svg></div>' +
+      '<span>'+a.label+'</span>';
+    appsGrid.appendChild(pill);
+  });
+
+  /* ============================================================
+     DATA: METRICS + BAR CHART
+  ============================================================ */
+  var METRICS = [
+    { label:'PSNR', val:'31.4', full:'dB, mean' },
+    { label:'SSIM', val:'0.94', full:'structural similarity' },
+    { label:'MAE', val:'0.021', full:'mean absolute error' },
+    { label:'RMSE', val:'0.038', full:'root mean sq. error' },
+    { label:'IoU', val:'0.91', full:'mask overlap' }
+  ];
+  var metricsGrid = document.getElementById('metricsGrid');
+  METRICS.forEach(function(m){
+    var card = document.createElement('div');
+    card.className = 'glass card-hover metric-card reveal';
+    card.innerHTML = '<div class="metric-val">'+m.val+'</div><div class="metric-label">'+m.label+'</div><div class="metric-full">'+m.full+'</div>';
+    metricsGrid.appendChild(card);
+  });
+
+  var BARS = [
+    { label:'Diffusion', val:94 },
+    { label:'LaMa', val:88 },
+    { label:'Pix2Pix', val:85 },
+    { label:'CycleGAN', val:82 },
+    { label:'U-Net', val:79 }
+  ];
+  var barChart = document.getElementById('barChart');
+  BARS.forEach(function(b){
+    var row = document.createElement('div');
+    row.className = 'bar-row';
+    row.innerHTML =
+      '<span class="bar-label">'+b.label+'</span>' +
+      '<div class="bar-track"><div class="bar-fill" data-target="'+b.val+'"></div></div>' +
+      '<span class="bar-val">0.'+b.val+'</span>';
+    barChart.appendChild(row);
+  });
+  var barFills = barChart.querySelectorAll('.bar-fill');
+  if('IntersectionObserver' in window){
+    var barIo = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          barFills.forEach(function(f){ f.style.width = f.getAttribute('data-target') + '%'; });
+          barIo.unobserve(e.target);
+        }
+      });
+    }, { threshold:0.4 });
+    barIo.observe(barChart);
+  } else {
+    barFills.forEach(function(f){ f.style.width = f.getAttribute('data-target') + '%'; });
+  }
+
+  /* ============================================================
+     DATA: TECH STACK
+  ============================================================ */
+  var TECH = ['Python','FastAPI','PyTorch','TensorFlow','OpenCV','NumPy','Rasterio','GDAL','Albumentations','React','Tailwind CSS','Framer Motion','Docker','GitHub'];
+  var techColors = ['#3FD8EE','#9B8FFF','#4ADE9C','#E0A23F'];
+  var techGrid = document.getElementById('techGrid');
+  TECH.forEach(function(t, i){
+    var chip = document.createElement('div');
+    chip.className = 'glass card-hover tech-chip reveal';
+    chip.innerHTML = '<span class="tc-dot" style="background:'+techColors[i%techColors.length]+'"></span><span class="tc-name">'+t+'</span>';
+    techGrid.appendChild(chip);
+  });
+
+  /* ============================================================
+     DATA: TEAM
+  ============================================================ */
+  var TEAM = [
+    { name:'Aarav Mehta', role:'Lead ML Engineer', initials:'AM' },
+    { name:'Priya Nair', role:'Remote Sensing Researcher', initials:'PN' },
+    { name:'Rohan Iyer', role:'Backend & Infra', initials:'RI' },
+    { name:'Sana Qureshi', role:'Frontend & Visualization', initials:'SQ' }
+  ];
+  var teamGrid = document.getElementById('teamGrid');
+  TEAM.forEach(function(t){
+    var card = document.createElement('div');
+    card.className = 'glass card-hover team-card reveal';
+    card.innerHTML =
+      '<div class="team-avatar"><span>'+t.initials+'</span></div>' +
+      '<div class="t-name">'+t.name+'</div><div class="t-role">'+t.role+'</div>' +
+      '<div class="team-links">' +
+        '<a href="#" aria-label="GitHub"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.58 9.58 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85v2.75c0 .26.18.58.69.48A10 10 0 0 0 12 2z"/></svg></a>' +
+        '<a href="#" aria-label="LinkedIn"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9h4v12H3V9zm6.5 0H13v1.71h.05c.5-.95 1.74-1.95 3.58-1.95 3.83 0 4.37 2.52 4.37 5.8V21h-4v-5.6c0-1.34-.02-3.05-1.87-3.05-1.87 0-2.16 1.46-2.16 2.96V21h-4V9z"/></svg></a>' +
+        '<a href="#" aria-label="Email"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m4 6 8 7 8-7M4 6h16v12H4z"/></svg></a>' +
+      '</div>';
+    teamGrid.appendChild(card);
+  });
+
+  /* ============================================================
+     DATA: RESEARCH PAPERS + FUTURE SCOPE
+  ============================================================ */
+  var PAPERS = [
+    { title:'Image-to-Image Translation with Conditional Adversarial Networks', meta:'Isola et al. — Pix2Pix foundation' },
+    { title:'Denoising Diffusion Probabilistic Models', meta:'Ho, Jain & Abbeel — diffusion foundations' },
+    { title:'Resolution-robust Large Mask Inpainting with Fourier Convolutions', meta:'Suvorov et al. — LaMa architecture' },
+    { title:'An Image is Worth 16x16 Words: Transformers for Image Recognition', meta:'Dosovitskiy et al. — ViT foundation' }
+  ];
+  var paperList = document.getElementById('paperList');
+  PAPERS.forEach(function(p){
+    var row = document.createElement('div');
+    row.className = 'paper-row';
+    row.innerHTML = '<div><div class="p-title">'+p.title+'</div><div class="p-meta">'+p.meta+'</div></div><span class="p-arrow">↗</span>';
+    paperList.appendChild(row);
+  });
+
+  var FUTURE = [
+    'Extend training coverage to additional ISRO sensors beyond LISS-IV (LISS-III, AWiFS).',
+    'Investigate temporal fusion — using prior cloud-free revisits to constrain reconstruction.',
+    'Quantify reconstruction confidence per-pixel for downstream decision-making.',
+    'Explore on-board / edge inference for near-real-time disaster response tasking.'
+  ];
+  var futureList = document.getElementById('futureList');
+  FUTURE.forEach(function(f){
+    var item = document.createElement('div');
+    item.className = 'future-item';
+    item.innerHTML = '<span class="fi-dot"></span><p>'+f+'</p>';
+    futureList.appendChild(item);
+  });
+
+  /* ============================================================
+     DATA: FAQ
+  ============================================================ */
+  var FAQS = [
+    { q:'What is LISS-IV?', a:'LISS-IV (Linear Imaging Self-Scanning Sensor-IV) is a high-resolution multispectral sensor aboard ISRO\'s Resourcesat-2 and 2A satellites, capturing imagery at roughly 5.6 m per pixel — used widely for agriculture, urban, and resource mapping.' },
+    { q:'Why Generative AI for cloud removal?', a:'Traditional cloud-masking simply discards occluded pixels. Generative models instead estimate plausible terrain underneath the cloud using surrounding spatial context, recovering usable information rather than leaving a gap.' },
+    { q:'Why diffusion models specifically?', a:'Diffusion models reconstruct an image gradually through many small denoising steps rather than one forward pass, which tends to produce more stable, seam-free results on large or irregularly shaped cloud masks compared to single-shot GAN inpainting.' },
+    { q:'What datasets are used?', a:'Training and evaluation draw on LISS-IV scenes alongside open datasets including Sentinel-2, Landsat-8, SEN12MS, the RICE dataset, WHU Cloud Dataset, and SPARCS — covering varied resolutions, sensors, and cloud conditions.' },
+    { q:'How accurate is the model?', a:'Across held-out test scenes, the best-performing reconstruction approach (diffusion-based) reaches a mean PSNR of 31.4 dB and SSIM of 0.94. Accuracy varies by cloud mask size and terrain complexity — large, irregular masks remain the harder case.' }
+  ];
+  var faqList = document.getElementById('faqList');
+  FAQS.forEach(function(f, idx){
+    var item = document.createElement('div');
+    item.className = 'faq-item';
+    var aid = 'faq-a-'+idx;
+    item.innerHTML =
+      '<button class="faq-q" aria-expanded="false" aria-controls="'+aid+'">' +
+        '<span>'+f.q+'</span>' +
+        '<span class="faq-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></span>' +
+      '</button>' +
+      '<div class="faq-a" id="'+aid+'"><div class="faq-a-inner">'+f.a+'</div></div>';
+    var btn = item.querySelector('.faq-q');
+    var panel = item.querySelector('.faq-a');
+    btn.addEventListener('click', function(){
+      var isOpen = item.classList.contains('open');
+      // close all others
+      faqList.querySelectorAll('.faq-item.open').forEach(function(openItem){
+        if(openItem !== item){
+          openItem.classList.remove('open');
+          openItem.querySelector('.faq-q').setAttribute('aria-expanded','false');
+          openItem.querySelector('.faq-a').style.maxHeight = null;
+        }
+      });
+      if(isOpen){
+        item.classList.remove('open');
+        btn.setAttribute('aria-expanded','false');
+        panel.style.maxHeight = null;
+      } else {
+        item.classList.add('open');
+        btn.setAttribute('aria-expanded','true');
+        panel.style.maxHeight = panel.scrollHeight + 'px';
+      }
+    });
+    faqList.appendChild(item);
+  });
+
+  /* ============================================================
+     IMAGE COMPARISON SLIDER
+  ============================================================ */
+  var compareFrame = document.getElementById('compareFrame');
+  var compareClip = document.getElementById('compareClip');
+  var compareHandle = document.getElementById('compareHandle');
+  function setComparePct(pct){
+    pct = Math.max(0, Math.min(100, pct));
+    compareClip.style.width = pct + '%';
+    compareHandle.style.left = pct + '%';
+    compareFrame.setAttribute('aria-valuenow', Math.round(pct));
+  }
+  setComparePct(50);
+  var dragging = false;
+  function pctFromEvent(clientX){
+    var rect = compareFrame.getBoundingClientRect();
+    return ((clientX - rect.left) / rect.width) * 100;
+  }
+  compareFrame.addEventListener('pointerdown', function(e){
+    dragging = true;
+    setComparePct(pctFromEvent(e.clientX));
+    compareFrame.setPointerCapture && compareFrame.setPointerCapture(e.pointerId);
+  });
+  compareFrame.addEventListener('pointermove', function(e){
+    if(dragging) setComparePct(pctFromEvent(e.clientX));
+  });
+  compareFrame.addEventListener('pointerup', function(){ dragging = false; });
+  compareFrame.addEventListener('pointercancel', function(){ dragging = false; });
+  compareFrame.addEventListener('keydown', function(e){
+    var current = parseFloat(compareClip.style.width) || 50;
+    if(e.key === 'ArrowLeft'){ setComparePct(current - 5); e.preventDefault(); }
+    if(e.key === 'ArrowRight'){ setComparePct(current + 5); e.preventDefault(); }
+  });
+
+  /* ============================================================
+     LIVE DEMO SIMULATION
+  ============================================================ */
+  var dropzone = document.getElementById('dropzone');
+  var fileInput = document.getElementById('fileInput');
+  var progressFill = document.getElementById('progressFill');
+  var progressPct = document.getElementById('progressPct');
+  var demoSteps = document.querySelectorAll('.demo-step-row');
+  var demoResult = document.getElementById('demoResult');
+  var demoRunning = false;
+
+  dropzone.addEventListener('click', function(){ if(!demoRunning) fileInput.click(); });
+  dropzone.addEventListener('keydown', function(e){ if((e.key==='Enter'||e.key===' ') && !demoRunning){ e.preventDefault(); fileInput.click(); } });
+  dropzone.setAttribute('tabindex','0');
+  dropzone.setAttribute('role','button');
+  dropzone.setAttribute('aria-label','Upload a satellite image to run the demo pipeline');
+
+  ['dragenter','dragover'].forEach(function(evt){
+    dropzone.addEventListener(evt, function(e){ e.preventDefault(); dropzone.classList.add('drag'); });
+  });
+  ['dragleave','drop'].forEach(function(evt){
+    dropzone.addEventListener(evt, function(e){ e.preventDefault(); dropzone.classList.remove('drag'); });
+  });
+  dropzone.addEventListener('drop', function(e){
+    if(demoRunning) return;
+    var files = e.dataTransfer.files;
+    if(files && files.length) runDemo(files[0]);
+  });
+  fileInput.addEventListener('change', function(){
+    if(demoRunning) return;
+    if(fileInput.files && fileInput.files.length) runDemo(fileInput.files[0]);
+  });
+
+  function setStepState(idx, state){
+    demoSteps.forEach(function(row){
+      var rowIdx = parseInt(row.getAttribute('data-step'), 10);
+      row.classList.remove('active','done');
+      if(rowIdx < idx) row.classList.add('done');
+      else if(rowIdx === idx) row.classList.add(state);
+    });
+  }
+
+  function runDemo(file){
+    demoRunning = true;
+    dropzone.querySelector('.dz-title').textContent = file.name || 'Processing image';
+    dropzone.querySelector('.dz-sub').textContent = 'Running pipeline…';
+    demoResult.classList.remove('ready');
+    demoResult.innerHTML =
+      '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg>' +
+      '<div class="dr-title">Processing…</div><div class="dr-sub">Running cloud detection and reconstruction.</div>';
+
+    var stageLabels = ['Image uploaded','Detecting cloud cover','Generating cloud mask','Running AI reconstruction','Finalizing cloud-free output'];
+    var totalStages = 5;
+    var stageDur = 850;
+    var stage = 0;
+
+    setStepState(0, 'active');
+    progressPct.textContent = stageLabels[0] + '…';
+
+    function advance(){
+      var pct = Math.round(((stage+1)/totalStages) * 100);
+      progressFill.style.width = pct + '%';
+      progressPct.textContent = pct + '% — ' + (stageLabels[stage] || 'Done');
+      setStepState(stage, 'active');
+      stage++;
+      if(stage < totalStages){
+        setTimeout(advance, stageDur);
+      } else {
+        setTimeout(function(){
+          setStepState(totalStages, 'done'); // marks all as done
+          progressPct.textContent = '100% — Reconstruction complete';
+          demoResult.classList.add('ready');
+          demoResult.innerHTML =
+            '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--signal);"><path d="M5 13l4 4L19 7"/></svg>' +
+            '<div class="dr-title">Reconstruction complete</div>' +
+            '<div class="dr-sub">Cloud-free output ready. Connect the FastAPI backend to download real results.</div>' +
+            '<button class="btn btn-ghost btn-sm" id="downloadBtn" style="margin-top:6px;">Download result</button>';
+          document.getElementById('downloadBtn').addEventListener('click', function(){
+            alert('This is a mock interface. Connect the FastAPI backend at GET /status to enable real downloads.');
+          });
+          dropzone.querySelector('.dz-title').textContent = 'Drop another satellite image';
+          dropzone.querySelector('.dz-sub').textContent = 'or click to browse · PNG, JPG, TIF';
+          demoRunning = false;
+        }, stageDur);
+      }
+    }
+    setTimeout(advance, stageDur);
+  }
+
+  /* ============================================================
+     CONTACT FORM (mock submit)
+  ============================================================ */
+  var contactForm = document.getElementById('contactForm');
+  var formStatus = document.getElementById('formStatus');
+  contactForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    formStatus.classList.add('show');
+    contactForm.querySelector('button[type="submit"]').textContent = 'Sent ✓';
+    setTimeout(function(){
+      contactForm.reset();
+      contactForm.querySelector('button[type="submit"]').textContent = 'Send message';
+    }, 2400);
+  });
+
+  /* ============================================================
+     INIT SCROLL REVEAL — runs last, once all static AND
+     dynamically-injected .reveal elements exist in the DOM.
+  ============================================================ */
+  var revealTargets = document.querySelectorAll('.reveal');
+  if('IntersectionObserver' in window && !reducedMotion){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    }, { threshold:0.12, rootMargin:'0px 0px -40px 0px' });
+    revealTargets.forEach(function(el){ io.observe(el); });
+  } else {
+    revealTargets.forEach(function(el){ el.classList.add('in'); });
+  }
+
+})();
+</script>
+
+
+<script src="config.js"></script>
+<script>
+(function(){
+  const RECONSTRUCT_ENDPOINT = `${window.API_BASE_URL}/reconstruct`;
+  const endpointLabelEl = document.getElementById('appEndpointLabel');
+  if (endpointLabelEl) endpointLabelEl.textContent = 'POST ' + RECONSTRUCT_ENDPOINT;
+
+  const marketingView = document.getElementById('marketingView');
+  const authView = document.getElementById('authView');
+  const appView = document.getElementById('appView');
+  const loginPane = document.getElementById('loginPane');
+  const registerPane = document.getElementById('registerPane');
+  const navCtaLoggedOut = document.getElementById('navCtaLoggedOut');
+  const navCtaLoggedIn = document.getElementById('navCtaLoggedIn');
+  const navUserChip = document.getElementById('navUserChip');
+
+  function hideAll(){
+    marketingView.hidden = true;
+    authView.hidden = true;
+    appView.hidden = true;
+  }
+
+  function showMarketing(){
+    hideAll();
+    marketingView.hidden = false;
+    window.scrollTo(0,0);
+  }
+
+  function showAuth(mode){
+    hideAll();
+    authView.hidden = false;
+    loginPane.hidden = mode !== 'login';
+    registerPane.hidden = mode !== 'register';
+    window.scrollTo(0,0);
+  }
+
+  function showApp(){
+    hideAll();
+    appView.hidden = false;
+    window.scrollTo(0,0);
+  }
+
+  function setLoggedInNav(user){
+    navCtaLoggedOut.hidden = true;
+    navCtaLoggedIn.hidden = false;
+    navUserChip.innerHTML = `<strong>${user.name}</strong>`;
+    document.getElementById('mobileLoginBtn').hidden = true;
+    document.getElementById('mobileRegisterBtn').hidden = true;
+    document.getElementById('mobileLogoutBtn').hidden = false;
+  }
+
+  function setLoggedOutNav(){
+    navCtaLoggedOut.hidden = false;
+    navCtaLoggedIn.hidden = true;
+    document.getElementById('mobileLoginBtn').hidden = false;
+    document.getElementById('mobileRegisterBtn').hidden = false;
+    document.getElementById('mobileLogoutBtn').hidden = true;
+  }
+
+  document.getElementById('navLoginBtn').addEventListener('click', e => { e.preventDefault(); showAuth('login'); });
+  document.getElementById('navRegisterBtn').addEventListener('click', e => { e.preventDefault(); showAuth('register'); });
+  document.getElementById('mobileLoginBtn').addEventListener('click', e => { e.preventDefault(); showAuth('login'); });
+  document.getElementById('mobileRegisterBtn').addEventListener('click', e => { e.preventDefault(); showAuth('register'); });
+  document.getElementById('goToRegister').addEventListener('click', () => showAuth('register'));
+  document.getElementById('goToLogin').addEventListener('click', () => showAuth('login'));
+  document.getElementById('authBackBtn').addEventListener('click', showMarketing);
+  document.getElementById('navLogoutBtn').addEventListener('click', e => { e.preventDefault(); logout(); });
+  document.getElementById('mobileLogoutBtn').addEventListener('click', e => { e.preventDefault(); logout(); });
+
+  // ---- session check on load: if a valid token exists, go straight to the app view ----
+  const accessToken = sessionStorage.getItem('accessToken');
+  if (accessToken) {
+    fetch(`${window.API_BASE_URL}/auth/me`, {
+      headers: { 'Authorization': `Bearer ${accessToken}` },
+      credentials: 'include',
+    })
+      .then(res => { if (!res.ok) throw new Error('Session expired'); return res.json(); })
+      .then(data => {
+        const user = data.data.user;
+        populateAccount(user);
+        setLoggedInNav(user);
+        showApp();
+      })
+      .catch(() => {
+        sessionStorage.clear();
+        setLoggedOutNav();
+        showMarketing();
+      });
+  } else {
+    setLoggedOutNav();
+  }
+
+  function populateAccount(user){
+    document.getElementById('greeting').textContent = `Welcome, ${user.name}`;
+    document.getElementById('uName').textContent = user.name;
+    document.getElementById('uEmail').textContent = user.email;
+    document.getElementById('uRole').textContent = user.role;
+    document.getElementById('uVerified').textContent = user.isEmailVerified ? 'Yes' : 'No';
+  }
+
+  function logout(){
+    fetch(`${window.API_BASE_URL}/auth/logout`, { method:'POST', credentials:'include' })
+      .catch(() => {})
+      .finally(() => {
+        sessionStorage.clear();
+        setLoggedOutNav();
+        showMarketing();
+      });
+  }
+
+  // ---- login form: on success, go straight to the app view (no dashboard.html) ----
+  const loginForm = document.getElementById('loginForm');
+  const loginMsg = document.getElementById('loginMsg');
+  const loginSubmitBtn = document.getElementById('loginSubmitBtn');
+
+  function showAuthMsg(el, text, type){
+    el.textContent = text;
+    el.className = 'auth-msg show ' + type;
+  }
+
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    loginSubmitBtn.disabled = true;
+    loginSubmitBtn.textContent = 'Logging in...';
+    loginMsg.className = 'auth-msg';
+
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+
+    try {
+      const res = await fetch(`${window.API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Login failed');
+
+      sessionStorage.setItem('accessToken', data.data.accessToken);
+      sessionStorage.setItem('user', JSON.stringify(data.data.user));
+
+      showAuthMsg(loginMsg, 'Login successful! Loading your dashboard...', 'success');
+      populateAccount(data.data.user);
+      setLoggedInNav(data.data.user);
+      setTimeout(showApp, 500);
+    } catch (err) {
+      showAuthMsg(loginMsg, err.message || 'Something went wrong. Is the backend running?', 'error');
+    } finally {
+      loginSubmitBtn.disabled = false;
+      loginSubmitBtn.textContent = 'Log in';
+    }
+  });
+
+  // ---- register form ----
+  const registerForm = document.getElementById('registerForm');
+  const registerMsg = document.getElementById('registerMsg');
+  const registerSubmitBtn = document.getElementById('registerSubmitBtn');
+
+  registerForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    registerSubmitBtn.disabled = true;
+    registerSubmitBtn.textContent = 'Creating account...';
+    registerMsg.className = 'auth-msg';
+
+    const name = document.getElementById('regName').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
+    const password = document.getElementById('regPassword').value;
+
+    try {
+      const res = await fetch(`${window.API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name, email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Registration failed');
+
+      showAuthMsg(registerMsg, 'Account created! Check your email to verify, then log in.', 'success');
+      registerForm.reset();
+      setTimeout(() => showAuth('login'), 1800);
+    } catch (err) {
+      showAuthMsg(registerMsg, err.message || 'Something went wrong. Is the backend running?', 'error');
+    } finally {
+      registerSubmitBtn.disabled = false;
+      registerSubmitBtn.textContent = 'Create account';
+    }
+  });
+
+  // ---- real upload + reconstruction pipeline (app view) ----
+  const dropzone = document.getElementById('appDropzone');
+  const fileInput = document.getElementById('appFileInput');
+  const progressFill = document.getElementById('appProgressFill');
+  const progressPct = document.getElementById('appProgressPct');
+  const stepRows = document.querySelectorAll('#appDemoSteps .demo-step-row');
+  const resultBox = document.getElementById('appDemoResult');
+  let running = false;
+
+  dropzone.addEventListener('click', () => { if (!running) fileInput.click(); });
+  dropzone.addEventListener('keydown', (e) => {
+    if ((e.key === 'Enter' || e.key === ' ') && !running) { e.preventDefault(); fileInput.click(); }
+  });
+  ['dragenter','dragover'].forEach(evt => dropzone.addEventListener(evt, e => { e.preventDefault(); dropzone.classList.add('drag'); }));
+  ['dragleave','drop'].forEach(evt => dropzone.addEventListener(evt, e => { e.preventDefault(); dropzone.classList.remove('drag'); }));
+  dropzone.addEventListener('drop', e => {
+    if (running) return;
+    const files = e.dataTransfer.files;
+    if (files && files.length) runReconstruction(files[0]);
+  });
+  fileInput.addEventListener('change', () => {
+    if (running) return;
+    if (fileInput.files && fileInput.files.length) runReconstruction(fileInput.files[0]);
+  });
+
+  function setStep(idx, state){
+    stepRows.forEach(row => {
+      const rowIdx = parseInt(row.getAttribute('data-step'), 10);
+      row.classList.remove('active','done');
+      if (rowIdx < idx) row.classList.add('done');
+      else if (rowIdx === idx) row.classList.add(state);
+    });
+  }
+
+  function setProgress(pct, label){
+    progressFill.style.width = pct + '%';
+    progressPct.textContent = pct + '% — ' + label;
+  }
+
+  async function runReconstruction(file){
+    running = true;
+    dropzone.querySelector('.dz-title').textContent = file.name;
+    dropzone.querySelector('.dz-sub').textContent = 'Uploading…';
+    resultBox.classList.remove('ready','error');
+    resultBox.innerHTML = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg><div class="dr-title">Processing…</div><div class="dr-sub">Waiting on the backend pipeline.</div>';
+
+    setStep(0, 'active');
+    setProgress(10, 'Image uploaded');
+
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      setStep(1, 'active');
+      setProgress(25, 'Sending to backend');
+
+      const res = await fetch(RECONSTRUCT_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${sessionStorage.getItem('accessToken')}` },
+        credentials: 'include',
+        body: formData,
+      });
+
+      setStep(2, 'active');
+      setProgress(55, 'Cloud detection & masking');
+
+      const contentType = res.headers.get('content-type') || '';
+      let payload = null;
+      if (contentType.includes('application/json')) {
+        payload = await res.json();
+      }
+
+      if (!res.ok) {
+        throw new Error((payload && payload.message) || `Request failed (${res.status})`);
+      }
+
+      setStep(3, 'active');
+      setProgress(80, 'AI reconstruction');
+
+      // Assumed response shape: { data: { resultUrl } }. Adjust to match your FastAPI response.
+      let resultUrl = payload && payload.data && (payload.data.resultUrl || payload.data.result_url);
+      if (!resultUrl && contentType.startsWith('image/')) {
+        const blob = await res.blob();
+        resultUrl = URL.createObjectURL(blob);
+      }
+
+      setStep(4, 'done');
+      setProgress(100, 'Reconstruction complete');
+      resultBox.classList.add('ready');
+
+      if (resultUrl) {
+        resultBox.innerHTML = `<img src="${resultUrl}" alt="Reconstructed output" />
+          <a class="btn btn-ghost btn-sm" href="${resultUrl}" download style="margin-top:6px;">Download result</a>`;
+      } else {
+        resultBox.innerHTML = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--signal);"><path d="M5 13l4 4L19 7"/></svg><div class="dr-title">Reconstruction complete</div><div class="dr-sub">Backend accepted the job but returned no result URL — check the response shape.</div>';
+      }
+
+      dropzone.querySelector('.dz-title').textContent = 'Drop another satellite image';
+      dropzone.querySelector('.dz-sub').textContent = 'or click to browse · PNG, JPG, TIF';
+    } catch (err) {
+      resultBox.classList.add('error');
+      resultBox.innerHTML = `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--danger, #E06A6A);"><circle cx="12" cy="12" r="10"/><path d="M12 8v5m0 3h.01"/></svg><div class="dr-title">Reconstruction failed</div><div class="dr-sub">${err.message}</div>`;
+      setProgress(0, 'Failed');
+      dropzone.querySelector('.dz-title').textContent = 'Try another image';
+      dropzone.querySelector('.dz-sub').textContent = 'or click to browse · PNG, JPG, TIF';
+    } finally {
+      running = false;
+    }
+  }
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,190 @@
+/* Shared auth-page styling, matching the CloudClear AI design tokens */
+:root {
+    --ink: #06080F;
+    --panel: #0B1220;
+    --panel-2: #0E1626;
+    --line: rgba(232, 236, 244, 0.08);
+    --line-strong: rgba(232, 236, 244, 0.16);
+    --text: #E8ECF4;
+    --text-dim: rgba(232, 236, 244, 0.62);
+    --text-faint: rgba(232, 236, 244, 0.38);
+    --cyan: #10B3C9;
+    --cyan-bright: #3FD8EE;
+    --violet: #7C6FE0;
+    --violet-bright: #9B8FFF;
+    --signal: #4ADE9C;
+    --danger: #E0605F;
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: var(--ink);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+a {
+    color: inherit;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 420px;
+    background: linear-gradient(160deg, rgba(232, 236, 244, 0.045), rgba(232, 236, 244, 0.015));
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    padding: 40px 36px;
+    backdrop-filter: blur(20px);
+}
+
+.auth-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 28px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 18px;
+}
+
+.brand-mark {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: conic-gradient(from 180deg, var(--cyan), var(--violet), var(--cyan));
+    position: relative;
+    flex-shrink: 0;
+}
+
+.brand-mark::after {
+    content: '';
+    position: absolute;
+    inset: 5px;
+    border-radius: 5px;
+    background: var(--ink);
+}
+
+h1 {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.auth-sub {
+    font-size: 14px;
+    color: var(--text-dim);
+    margin-bottom: 28px;
+}
+
+.form-row {
+    margin-bottom: 16px;
+}
+
+.form-row label {
+    display: block;
+    font-size: 13px;
+    color: var(--text-dim);
+    font-weight: 500;
+    margin-bottom: 6px;
+}
+
+.form-row input {
+    width: 100%;
+    background: rgba(232, 236, 244, 0.04);
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+    transition: border-color .25s, background .25s;
+}
+
+.form-row input:focus {
+    border-color: var(--cyan-bright);
+    background: rgba(232, 236, 244, 0.06);
+    outline: none;
+}
+
+.btn-submit {
+    width: 100%;
+    padding: 13px 24px;
+    border-radius: 999px;
+    font-size: 14.5px;
+    font-weight: 600;
+    background: linear-gradient(135deg, var(--cyan) 0%, var(--violet) 100%);
+    color: #04070D;
+    border: none;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: transform .3s var(--ease), opacity .2s;
+}
+
+.btn-submit:hover {
+    transform: translateY(-2px);
+}
+
+.btn-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.auth-footer {
+    margin-top: 22px;
+    text-align: center;
+    font-size: 13.5px;
+    color: var(--text-dim);
+}
+
+.auth-footer a {
+    color: var(--cyan-bright);
+    font-weight: 500;
+}
+
+.msg {
+    margin-top: 16px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    display: none;
+}
+
+.msg.error {
+    display: block;
+    background: rgba(224, 96, 95, 0.1);
+    border: 1px solid rgba(224, 96, 95, 0.3);
+    color: #ff8b8a;
+}
+
+.msg.success {
+    display: block;
+    background: rgba(74, 222, 156, 0.1);
+    border: 1px solid rgba(74, 222, 156, 0.3);
+    color: var(--signal);
+}
+
+.back-link {
+    display: inline-block;
+    margin-bottom: 20px;
+    font-size: 13.5px;
+    color: var(--text-faint);
+}
+
+.back-link:hover {
+    color: var(--cyan-bright);
+}

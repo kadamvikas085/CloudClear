@@ -1,0 +1,95 @@
+version: "3.9"
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: cloudvision-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: cloudvision
+      MONGO_INITDB_ROOT_PASSWORD: cloudvision_dev_password
+      MONGO_INITDB_DATABASE: cloudvision
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: cloudvision-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ai-service:
+    build:
+      context: ./ai-service
+    container_name: cloudvision-ai-service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    container_name: cloudvision-backend-api
+    restart: unless-stopped
+    command: node src/server.js
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./backend/.env
+    environment:
+      MONGO_URI: mongodb+srv://kadamvikas9545_db_user:m4z7uFjCitzRuMlm@cluster0.qbmsrzg.mongodb.net/?appName=Cluster0
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      AI_SERVICE_BASE_URL: http://ai-service:8000
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ai-service:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ./backend
+    container_name: cloudvision-backend-worker
+    restart: unless-stopped
+    command: node src/worker.js
+    env_file:
+      - ./backend/.env
+    environment:
+      MONGO_URI: MONGO_URI=mongodb+srv://kadamvikas9545_db_user:vision%40123@cluster0.qbmsrzg.mongodb.net/cloudvision?retryWrites=true&w=majority&appName=Cluster0
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      AI_SERVICE_BASE_URL: http://ai-service:8000
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ai-service:
+        condition: service_healthy
+
+volumes:
+  mongo_data:
+  redis_data:
