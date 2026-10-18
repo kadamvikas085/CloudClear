@@ -10,81 +10,39 @@
 </head>
 <body>
 
-<div class="auth-card">
+<main class="auth-card">
   <a href="index.html" class="back-link">&larr; Back to home</a>
   <div class="auth-brand">
     <span class="brand-mark" aria-hidden="true"></span>
-    CloudClear<span style="color:var(--cyan-bright)">AI</span>
+    CloudClear<span class="ai">AI</span>
   </div>
   <h1>Create your account</h1>
   <p class="auth-sub">Sign up to upload imagery and run reconstructions.</p>
 
-  <form id="registerForm">
+  <form id="registerForm" novalidate>
     <div class="form-row">
       <label for="name">Full name</label>
-      <input type="text" id="name" required minlength="2" maxlength="100" placeholder="Your full name" />
+      <input type="text" id="name" name="name" required minlength="2" maxlength="100" autocomplete="name" placeholder="Your full name" />
     </div>
     <div class="form-row">
       <label for="email">Email</label>
-      <input type="email" id="email" required placeholder="you@example.com" />
+      <input type="email" id="email" name="email" required autocomplete="email" placeholder="you@example.com" />
     </div>
     <div class="form-row">
       <label for="password">Password</label>
-      <input type="password" id="password" required minlength="8" placeholder="At least 8 characters, 1 letter + 1 number" />
+      <input type="password" id="password" name="password" required minlength="8" autocomplete="new-password" aria-describedby="pwHint" placeholder="At least 8 characters" />
+      <p class="field-hint" id="pwHint">At least 8 characters, with at least one letter and one number.</p>
     </div>
     <button type="submit" class="btn-submit" id="submitBtn">Create account</button>
-    <div class="msg" id="msg"></div>
+    <div class="msg" id="msg" role="alert"></div>
   </form>
 
   <div class="auth-footer">
     Already have an account? <a href="login.html">Log in</a>
   </div>
-</div>
+</main>
 
 <script src="config.js"></script>
-<script>
-  const form = document.getElementById('registerForm');
-  const msg = document.getElementById('msg');
-  const submitBtn = document.getElementById('submitBtn');
-
-  function showMessage(text, type){
-    msg.textContent = text;
-    msg.className = 'msg ' + type;
-  }
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Creating account...';
-    msg.className = 'msg';
-
-    const name = document.getElementById('name').value.trim();
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value;
-
-    try {
-      const res = await fetch(`${window.API_BASE_URL}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ name, email, password }),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || 'Registration failed');
-      }
-
-      showMessage('Account created! Check your email to verify, then log in.', 'success');
-      form.reset();
-      setTimeout(() => { window.location.href = 'login.html'; }, 1800);
-    } catch (err) {
-      showMessage(err.message || 'Something went wrong. Is the backend running?', 'error');
-    } finally {
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Create account';
-    }
-  });
-</script>
+<script type="module" src="js/auth-page.js"></script>
 </body>
 </html>

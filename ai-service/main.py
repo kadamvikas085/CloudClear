@@ -47,7 +47,10 @@ except Exception:
 # API key used to protect the inference endpoints. Set the environment variable
 # `CLOUDVISION_API_KEY` in production. If not set, we fall back to the placeholder
 # value used during development.
-API_KEY = os.getenv("CLOUDVISION_API_KEY", "replace_with_shared_secret_between_express_and_fastapi")
+API_KEY = os.getenv("CLOUDVISION_API_KEY")
+
+if not API_KEY:
+    raise RuntimeError("CLOUDVISION_API_KEY environment variable is required")
 ALLOWED_MODELS = {"GAN", "Diffusion", "LaMa", "U-Net"}
 
 

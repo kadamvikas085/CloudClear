@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>CloudClear AI — Generative Reconstruction for LISS-IV Imagery</title>
-<meta name="description" content="Generative AI-based cloud removal and reconstruction for LISS-IV satellite imagery. GANs, diffusion models, and inpainting networks restore cloud-free Earth observation data." />
+<title>CloudClear AI — Cloud Removal for Satellite Imagery</title>
+<meta name="description" content="Cloud removal and reconstruction for satellite imagery: project workspace, asynchronous processing queue, a pretrained LaMa inpainting model and classical OpenCV options." />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -1098,19 +1098,18 @@ footer{ padding:64px 0 32px; }
   <li><a href="#workflow">Workflow</a></li>
   <li><a href="#models">Models</a></li>
   <li><a href="#datasets">Datasets</a></li>
-  <li><a href="#demo">Live Demo</a></li>
-  <li><a href="#performance">Performance</a></li>
+  <li><a href="#demo">Get Started</a></li>
   <li><a href="#research">Research</a></li>
   <li><a href="#faq">FAQ</a></li>
 </ul>
 
 <div class="nav-cta" id="navCtaLoggedOut">
-    <a href="#" class="btn btn-ghost btn-sm" id="navLoginBtn">Log In</a>
-    <a href="#" class="btn btn-primary btn-sm" id="navRegisterBtn">Sign Up</a>
+    <a href="login.html" class="btn btn-ghost btn-sm">Log In</a>
+    <a href="register.html" class="btn btn-primary btn-sm">Sign Up</a>
 </div>
 <div class="nav-cta" id="navCtaLoggedIn" hidden>
-    <span class="user-chip" id="navUserChip"></span>
-    <a href="#" class="btn btn-ghost btn-sm" id="navLogoutBtn">Log out</a>
+    <a href="app.html" class="btn btn-primary btn-sm">Open workspace</a>
+    <button type="button" class="btn btn-ghost btn-sm" id="navLogoutBtn">Log out</button>
 </div>
 
 <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false">
@@ -1124,13 +1123,12 @@ footer{ padding:64px 0 32px; }
   <a href="#workflow">Workflow</a>
   <a href="#models">Models</a>
   <a href="#datasets">Datasets</a>
-  <a href="#demo">Live Demo</a>
-  <a href="#performance">Performance</a>
+  <a href="#demo">Get Started</a>
   <a href="#research">Research</a>
   <a href="#faq">FAQ</a>
-  <a href="#" id="mobileLoginBtn" style="margin-top:4px;">Log In</a>
-  <a href="#" id="mobileRegisterBtn" class="btn btn-primary" style="margin-top:8px;justify-content:center;">Sign Up</a>
-  <a href="#" id="mobileLogoutBtn" class="btn btn-ghost" style="margin-top:8px;justify-content:center;" hidden>Log out</a>
+  <a href="login.html" id="mobileLoginBtn" style="margin-top:4px;">Log In</a>
+  <a href="register.html" id="mobileRegisterBtn" class="btn btn-primary" style="margin-top:8px;justify-content:center;">Sign Up</a>
+  <a href="app.html" id="mobileAppBtn" class="btn btn-primary" style="margin-top:8px;justify-content:center;" hidden>Open workspace</a>
 </div>
 
 <main id="main-content">
@@ -1143,38 +1141,37 @@ footer{ padding:64px 0 32px; }
   <div class="container hero-grid">
     <div>
       <p class="eyebrow hero-eyebrow">LISS-IV EARTH OBSERVATION &middot; GENERATIVE RECONSTRUCTION</p>
-      <h1>Generative AI-based <span class="grad">cloud removal</span> &amp; reconstruction for LISS-IV satellite imagery</h1>
-      <p class="lede">Transform cloud-occluded LISS-IV scenes into high-fidelity, cloud-free imagery using GANs, diffusion models, and image inpainting networks &mdash; trained for Earth observation at India's resolution standard.</p>
+      <h1><span class="grad">Cloud removal</span> &amp; reconstruction for satellite imagery</h1>
+      <p class="lede">Upload a scene, mask the clouds and fill them in with a pretrained LaMa inpainting network or one of three classical OpenCV methods. Work in projects, track background jobs, and compare the result with the original.</p>
       <div class="hero-ctas">
-        <a href="#demo" class="btn btn-primary">Try Demo</a>
-        <a href="#research" class="btn btn-ghost">View Research</a>
-        <a href="#" class="btn btn-ghost">GitHub</a>
-        <a href="#" class="btn btn-ghost">Documentation</a>
+        <a href="register.html" class="btn btn-primary">Create an account</a>
+        <a href="login.html" class="btn btn-ghost">Log in</a>
+        <a href="#research" class="btn btn-ghost">View research</a>
       </div>
       <div class="hero-stats">
         <div class="hero-stat">
-          <div class="num" data-count="31.4" data-decimals="1"><span class="unit">dB</span></div>
-          <div class="label">PSNR, MEAN</div>
+          <div class="num" data-count="4" data-decimals="0">&nbsp;</div>
+          <div class="label">RECONSTRUCTION OPTIONS</div>
         </div>
         <div class="hero-stat">
-          <div class="num" data-count="0.94" data-decimals="2">&nbsp;</div>
-          <div class="label">SSIM SCORE</div>
+          <div class="num" data-count="1" data-decimals="0">&nbsp;</div>
+          <div class="label">TRAINED NEURAL NETWORK</div>
         </div>
         <div class="hero-stat">
-          <div class="num" data-count="5.6" data-decimals="1"><span class="unit">m</span></div>
-          <div class="label">SPATIAL RESOLUTION</div>
+          <div class="num" data-count="100" data-decimals="0"><span class="unit">MB</span></div>
+          <div class="label">MAX UPLOAD SIZE</div>
         </div>
         <div class="hero-stat">
-          <div class="num" data-count="312" data-decimals="0">&nbsp;</div>
-          <div class="label">SCENES PROCESSED</div>
+          <div class="num" data-count="3" data-decimals="0">&nbsp;</div>
+          <div class="label">INPUT FORMATS</div>
         </div>
       </div>
     </div>
 
     <div class="hero-visual glass bracket">
       <div class="telemetry-head">
-        <span>SWATH&nbsp; 21.4&deg;N, 78.1&deg;E</span>
-        <span class="live">RECONSTRUCTING</span>
+        <span>ILLUSTRATION &middot; NOT REAL DATA</span>
+        <span class="live">ANIMATION</span>
       </div>
       <div class="swath-stage">
         <canvas id="heroCanvas"></canvas>
@@ -1185,7 +1182,7 @@ footer{ padding:64px 0 32px; }
       <div class="telemetry-foot">
         <span>BAND <b>3,2,1</b></span>
         <span>SENSOR <b>LISS-IV MX</b></span>
-        <span>CLOUD COVER <b>38%&rarr;0%</b></span>
+        <span>DATA <b>SYNTHETIC</b></span>
       </div>
     </div>
   </div>
@@ -1199,20 +1196,19 @@ footer{ padding:64px 0 32px; }
   <div class="container">
     <p class="eyebrow">PROBLEM &amp; MOTIVATION</p>
     <div class="section-head">
-      <h2>Clouds block more than half of usable LISS-IV coverage</h2>
-      <p>Cloud cover is the single largest source of data loss in optical Earth observation. Reconstructing what's hidden &mdash; without inventing false detail &mdash; is the core challenge this platform addresses.</p>
+      <h2>Clouds routinely block optical Earth observation</h2>
+      <p>Cloud cover is a major source of data loss in optical Earth observation. Reconstructed pixels are estimates, not measurements, so this tool keeps a confidence map alongside every result.</p>
     </div>
 
     <div class="about-lead-row">
       <div class="glass stat-block reveal">
-        <div class="stat-row"><span class="label">Avg. cloud cover, Indian monsoon scenes</span><span class="val">35&ndash;60%</span></div>
-        <div class="stat-row"><span class="label">LISS-IV revisit cycle</span><span class="val">5 days</span></div>
-        <div class="stat-row"><span class="label">Usable scenes lost to cloud, Jun&ndash;Sep</span><span class="val">~42%</span></div>
-        <div class="stat-row"><span class="label">Avg. delay to next clear acquisition</span><span class="val">10&ndash;15 days</span></div>
+        <div class="stat-row"><span class="label">Input formats</span><span class="val">PNG &middot; JPG &middot; TIFF</span></div>
+        <div class="stat-row"><span class="label">Cloud mask</span><span class="val">Threshold heuristic</span></div>
+        <div class="stat-row"><span class="label">Reconstruction</span><span class="val">LaMa + 3 classical</span></div>
+        <div class="stat-row"><span class="label">Processing</span><span class="val">Background queue</span></div>
       </div>
       <div class="reveal">
-        <h3 style="font-size:19px;margin-bottom:12px;">Why this matters for ISRO operations</h3>
-        <p style="color:var(--text-dim);font-size:14.5px;line-height:1.7;">Mission planners can't simply "wait for clear skies" &mdash; crop-stress windows, flood peaks, and disaster response timelines don't pause for weather. A reconstructed estimate delivered same-day is operationally more valuable than a clean image delivered two revisit-cycles late. This platform is built to slot into that decision window, not to replace ground-truth acquisition.</p>
+        \1Crop-stress windows, flood peaks and disaster response timelines do not wait for clear skies. An estimate of what is under the cloud can help decide where to look next, but it should never replace a clear acquisition for analysis that needs measured values.\2
       </div>
     </div>
 
@@ -1235,8 +1231,8 @@ footer{ padding:64px 0 32px; }
         <div class="icon-wrap">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/></svg>
         </div>
-        <h3>National EO infrastructure</h3>
-        <p>Every reconstructed scene is one less re-tasking request competing for satellite time &mdash; lowering the operational cost of maintaining continuous national coverage.</p>
+        <h3>Acquisition planning</h3>
+        <p>A reconstructed preview can help triage which scenes need re-acquisition, though it does not remove the need for ground truth.</p>
       </div>
     </div>
   </div>
@@ -1249,57 +1245,57 @@ footer{ padding:64px 0 32px; }
   <div class="container">
     <p class="eyebrow">PROCESSING PIPELINE</p>
     <div class="section-head">
-      <h2>From raw swath to cloud-free output</h2>
-      <p>Six stages, each independently inspectable. The pipeline is built so a failed detection or a low-confidence mask is visible before it ever reaches reconstruction.</p>
+      <h2>From upload to reconstructed output</h2>
+      <p>Six stages. Cloud detection is a simple threshold heuristic, so check the confidence map before relying on a result.</p>
     </div>
 
     <div class="workflow-rail" id="workflowRail">
       <div class="wf-step reveal">
         <div class="wf-node">01</div>
         <div class="wf-body">
-          <h3>Satellite image ingest</h3>
-          <p>Raw LISS-IV multispectral scene is ingested with metadata &mdash; band configuration, acquisition geometry, and sensor calibration intact.</p>
-          <span class="wf-tag">INPUT: .tif, 4-band MX</span>
+          <h3>Image upload</h3>
+          <p>A PNG, JPG or TIFF (up to 100 MB) is uploaded into a project and stored in cloud storage.</p>
+          <span class="wf-tag">INPUT: PNG &middot; JPG &middot; TIFF</span>
         </div>
       </div>
       <div class="wf-step reveal">
         <div class="wf-node">02</div>
         <div class="wf-body">
           <h3>Cloud detection</h3>
-          <p>A classifier scans the scene to flag cloud-affected regions, distinguishing cloud from haze, snow, and bright bare soil.</p>
-          <span class="wf-tag">MODEL: Vision Transformer</span>
+          <p>Bright, low-saturation pixels are flagged as likely cloud. Bright snow, sand or buildings can be mistaken for cloud.</p>
+          <span class="wf-tag">METHOD: HSV threshold</span>
         </div>
       </div>
       <div class="wf-step reveal">
         <div class="wf-node">03</div>
         <div class="wf-body">
-          <h3>Cloud segmentation</h3>
-          <p>Pixel-precise boundaries are drawn around every detected cloud region, separating thin cirrus from dense cumulus for adaptive handling.</p>
-          <span class="wf-tag">MODEL: DeepLabV3+</span>
+          <h3>Mask cleanup</h3>
+          <p>Morphological opening and closing remove speckle and close small gaps in the detected regions.</p>
+          <span class="wf-tag">METHOD: morphology</span>
         </div>
       </div>
       <div class="wf-step reveal">
         <div class="wf-node">04</div>
         <div class="wf-body">
-          <h3>Cloud mask generation</h3>
-          <p>Segmentation output is converted into a binary occlusion mask &mdash; the exact region the generative model is permitted to repaint.</p>
-          <span class="wf-tag">OUTPUT: binary mask, 5.6m/px</span>
+          <h3>Cloud mask</h3>
+          <p>The result is a binary occlusion mask: the only region the reconstruction step is allowed to change.</p>
+          <span class="wf-tag">OUTPUT: binary mask</span>
         </div>
       </div>
       <div class="wf-step reveal">
         <div class="wf-node">05</div>
         <div class="wf-body">
-          <h3>Generative AI reconstruction</h3>
-          <p>Masked regions are reconstructed using GAN, diffusion, or inpainting networks conditioned on the unmasked surrounding terrain.</p>
-          <span class="wf-tag">MODELS: Pix2Pix &middot; LaMa &middot; Diffusion</span>
+          <h3>Reconstruction</h3>
+          <p>Masked pixels are filled by the model you choose: a pretrained LaMa network, or one of three classical OpenCV inpainting variants.</p>
+          <span class="wf-tag">MODELS: LaMa &middot; OpenCV &times;3</span>
         </div>
       </div>
       <div class="wf-step reveal">
         <div class="wf-node">06</div>
         <div class="wf-body">
-          <h3>Cloud-free output</h3>
-          <p>A composited, full-resolution scene is returned with confidence metadata flagging which pixels are observed versus reconstructed.</p>
-          <span class="wf-tag">OUTPUT: cloud-free .tif + confidence map</span>
+          <h3>Result and confidence map</h3>
+          <p>A reconstructed PNG is returned with a confidence map: pixels far from any cloud score high, cloud interiors score lower.</p>
+          <span class="wf-tag">OUTPUT: PNG + confidence map</span>
         </div>
       </div>
     </div>
@@ -1314,8 +1310,8 @@ footer{ padding:64px 0 32px; }
   <div class="container">
     <p class="eyebrow">MODEL ZOO</p>
     <div class="section-head">
-      <h2>Eight architectures, each suited to a different stage</h2>
-      <p>Detection, segmentation, and reconstruction call for different model families. Select a card for architecture, accuracy, and trade-off detail.</p>
+      <h2>Four reconstruction options, one trained network</h2>
+      <p>Select a card to see what actually runs. Only LaMa is a trained neural network; the other three are classical OpenCV inpainting under neural-sounding labels. The full list is in the workspace Model Zoo.</p>
     </div>
     <div class="model-grid" id="modelGrid"></div>
   </div>
@@ -1326,10 +1322,10 @@ footer{ padding:64px 0 32px; }
 ============================================================ -->
 <section class="section" id="datasets">
   <div class="container">
-    <p class="eyebrow">TRAINING &amp; BENCHMARK DATA</p>
+    <p class="eyebrow">REFERENCE DATASETS</p>
     <div class="section-head">
-      <h2>Trained and validated across seven datasets</h2>
-      <p>LISS-IV scenes anchor domain accuracy; open multispectral and cloud-specific datasets extend generalization and benchmarking.</p>
+      <h2>Public resources for cloud-removal research</h2>
+      <p>These are relevant datasets, listed for reference. None of them was used to train the models in this deployment: the LaMa checkpoint was trained on Places2 and the other options need no training.</p>
     </div>
     <div class="dataset-grid" id="datasetGrid"></div>
   </div>
@@ -1341,10 +1337,10 @@ footer{ padding:64px 0 32px; }
 ============================================================ -->
 <section class="section" id="generative">
   <div class="container">
-    <p class="eyebrow">HOW THE RECONSTRUCTION WORKS</p>
+    <p class="eyebrow">BACKGROUND: GENERATIVE APPROACHES</p>
     <div class="section-head">
       <h2>Generator, discriminator, and the diffusion alternative</h2>
-      <p>Adversarial reconstruction pits two networks against each other; diffusion reconstruction instead denoises a masked region step by step.</p>
+      <p>Adversarial reconstruction pits two networks against each other; diffusion reconstruction instead denoises a masked region step by step. This section explains the ideas only: this deployment runs a pretrained LaMa network and classical inpainting, not a GAN or a diffusion model.</p>
     </div>
 
     <div class="genai-flow reveal">
@@ -1410,7 +1406,7 @@ footer{ padding:64px 0 32px; }
     <p class="eyebrow">RESULT PREVIEW</p>
     <div class="section-head">
       <h2>Drag to compare</h2>
-      <p>An illustrative before/after render. Drag the handle or use arrow keys to reveal the reconstructed scene.</p>
+      <p>An illustration built from gradients, not real model output. Drag the handle or use arrow keys. Real comparisons are in the workspace.</p>
     </div>
     <div class="compare-wrap">
       <div class="glass compare-frame" id="compareFrame" tabindex="0" role="slider" aria-label="Drag to compare cloudy and reconstructed image" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50">
@@ -1436,38 +1432,22 @@ footer{ padding:64px 0 32px; }
 ============================================================ -->
 <section class="section" id="demo">
   <div class="container">
-    <p class="eyebrow">INTERACTIVE</p>
+    <p class="eyebrow">GET STARTED</p>
     <div class="section-head">
-      <h2>Run the pipeline on a sample scene</h2>
-      <p>This demo runs against mock inference until the FastAPI backend is connected. Upload any image to see the full pipeline simulate end to end.</p>
+      <h2>Try it with your own imagery</h2>
+      <p>Create an account, make a project, upload a PNG, JPG or TIFF, pick a model and follow the job as it runs in the background. Nothing on this page is a simulation: the workspace talks to the real processing queue.</p>
     </div>
-
-    <div class="glass demo-shell">
-      <div class="demo-panel">
-        <div class="dropzone" id="dropzone">
-          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 16V4m0 0L7 9m5-5 5 5M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
-          <div class="dz-title">Drop a satellite image here</div>
-          <div class="dz-sub">or click to browse &middot; PNG, JPG, TIF</div>
-          <input type="file" id="fileInput" accept="image/*" hidden />
-        </div>
-
-        <div class="demo-steps" id="demoSteps">
-          <div class="demo-step-row" data-step="0"><span class="ds-dot"></span> Image uploaded</div>
-          <div class="demo-step-row" data-step="1"><span class="ds-dot"></span> Cloud detection</div>
-          <div class="demo-step-row" data-step="2"><span class="ds-dot"></span> Cloud mask generated</div>
-          <div class="demo-step-row" data-step="3"><span class="ds-dot"></span> AI reconstruction</div>
-          <div class="demo-step-row" data-step="4"><span class="ds-dot"></span> Cloud-free output ready</div>
-        </div>
-        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
-        <div class="progress-pct" id="progressPct">Awaiting upload</div>
-      </div>
-
-      <div class="demo-panel">
-        <div class="demo-result-box" id="demoResult">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg>
-          <div class="dr-title">Result preview</div>
-          <div class="dr-sub">Your reconstructed output will appear here after processing completes.</div>
-        </div>
+    <div class="glass demo-shell" style="padding:36px;display:block;">
+      <ol style="padding-left:20px;color:var(--text-dim);font-size:15px;line-height:2;margin-bottom:24px;">
+        <li>Create a project to group related images.</li>
+        <li>Upload a satellite image (up to 100 MB).</li>
+        <li>Choose LaMa or a classical OpenCV option.</li>
+        <li>Open the result, compare it with the original and download the PNG outputs.</li>
+      </ol>
+      <div class="hero-ctas" id="demoCtas">
+        <a href="register.html" class="btn btn-primary" id="demoSignup">Create an account</a>
+        <a href="login.html" class="btn btn-ghost" id="demoLogin">Log in</a>
+        <a href="app.html" class="btn btn-primary" id="demoOpen" hidden>Open workspace</a>
       </div>
     </div>
   </div>
@@ -1481,8 +1461,8 @@ footer{ padding:64px 0 32px; }
   <div class="container">
     <p class="eyebrow">CAPABILITIES</p>
     <div class="section-head">
-      <h2>What the pipeline handles end to end</h2>
-      <p>Every stage from detection to delivery is modular &mdash; swap a model, rerun a stage, or export an intermediate result independently.</p>
+      <h2>What the application does today</h2>
+      <p>Each item below describes behaviour that exists in the current code.</p>
     </div>
     <div class="features-grid" id="featuresGrid"></div>
   </div>
@@ -1496,29 +1476,9 @@ footer{ padding:64px 0 32px; }
     <p class="eyebrow">USE CASES</p>
     <div class="section-head">
       <h2>Where cloud-free continuity matters most</h2>
-      <p>Any program relying on regular optical revisit cycles benefits from a fallback that doesn't simply discard the occluded scene.</p>
+      <p>Examples of programmes that depend on regular optical revisits. These are possible uses, not validated deployments.</p>
     </div>
     <div class="apps-grid" id="appsGrid"></div>
-  </div>
-</section>
-
-<!-- ============================================================
-     PERFORMANCE
-============================================================ -->
-<section class="section" id="performance">
-  <div class="container">
-    <p class="eyebrow">BENCHMARKS</p>
-    <div class="section-head">
-      <h2>Reconstruction accuracy across test scenes</h2>
-      <p>Evaluated against held-out LISS-IV scenes with synthetic and naturally-occurring cloud masks.</p>
-    </div>
-
-    <div class="metrics-grid" id="metricsGrid"></div>
-
-    <div class="glass chart-card reveal">
-      <h3>Model comparison &mdash; mean SSIM by architecture</h3>
-      <div id="barChart"></div>
-    </div>
   </div>
 </section>
 
@@ -1530,26 +1490,12 @@ footer{ padding:64px 0 32px; }
     <p class="eyebrow">BUILT WITH</p>
     <div class="section-head">
       <h2>Tech stack</h2>
-      <p>A Python/PyTorch inference core behind a FastAPI service layer, with a React front end for visualization and review.</p>
+      <p>A plain HTML/CSS/JavaScript front end, a Node.js/Express API with a Redis-backed worker, and a Python FastAPI inference service.</p>
     </div>
     <div class="tech-grid" id="techGrid"></div>
   </div>
 </section>
 
-
-<!-- ============================================================
-     TEAM
-============================================================ -->
-<section class="section" id="team">
-  <div class="container">
-    <p class="eyebrow">THE TEAM</p>
-    <div class="section-head">
-      <h2>Built by a small applied-AI team</h2>
-      <p>Reach out for collaboration, dataset access, or deployment discussions.</p>
-    </div>
-    <div class="team-grid" id="teamGrid"></div>
-  </div>
-</section>
 
 <!-- ============================================================
      RESEARCH
@@ -1567,7 +1513,7 @@ footer{ padding:64px 0 32px; }
         <div class="paper-list" id="paperList"></div>
       </div>
       <div class="glass reveal" style="padding:30px;">
-        <h3 style="font-size:16px;margin-bottom:18px;">Future scope</h3>
+        <h3 style="font-size:16px;margin-bottom:18px;">Possible future work</h3>
         <div class="future-list" id="futureList"></div>
       </div>
     </div>
@@ -1595,43 +1541,12 @@ footer{ padding:64px 0 32px; }
     <p class="eyebrow">GET IN TOUCH</p>
     <div class="section-head">
       <h2>Questions, collaborations, or access requests</h2>
-      <p>Send a message and the team will get back to you. For dataset or API access, mention your use case.</p>
+      <p>Email us and mention your use case.</p>
     </div>
 
-    <div class="contact-grid">
-      <form class="glass contact-form reveal" id="contactForm">
-        <div class="form-row">
-          <label for="cf-name">Name</label>
-          <input type="text" id="cf-name" placeholder="Your full name" required />
-        </div>
-        <div class="form-row">
-          <label for="cf-email">Email</label>
-          <input type="email" id="cf-email" placeholder="you@organization.com" required />
-        </div>
-        <div class="form-row">
-          <label for="cf-msg">Message</label>
-          <textarea id="cf-msg" rows="4" placeholder="Tell us what you're working on" required></textarea>
-        </div>
-        <button type="submit" class="btn btn-primary" style="justify-content:center;">Send message</button>
-        <span class="form-status" id="formStatus">Message sent. We'll be in touch shortly.</span>
-      </form>
-
-      <div class="contact-side">
-        <div class="map-placeholder reveal">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7-6.4-7-12a7 7 0 1 1 14 0c0 5.6-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
-          <span class="mono-tag">MAP PLACEHOLDER</span>
-        </div>
-        <div class="glass contact-info-card reveal">
-          <div class="contact-info-row">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z" opacity="0"/><path d="m4 6 8 7 8-7M4 6h16v12H4z"/></svg>
-            contact@cloudclear.ai
-          </div>
-          <div class="social-row">
-            <a href="#" aria-label="GitHub"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.58 9.58 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85v2.75c0 .26.18.58.69.48A10 10 0 0 0 12 2z"/></svg></a>
-            <a href="#" aria-label="LinkedIn"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9h4v12H3V9zm6.5 0H13v1.71h.05c.5-.95 1.74-1.95 3.58-1.95 3.83 0 4.37 2.52 4.37 5.8V21h-4v-5.6c0-1.34-.02-3.05-1.87-3.05-1.87 0-2.16 1.46-2.16 2.96V21h-4V9z"/></svg></a>
-          </div>
-        </div>
-      </div>
+    <div class="glass reveal" style="padding:32px;max-width:560px;">
+      <p style="color:var(--text-dim);font-size:15px;line-height:1.7;margin-bottom:18px;">There is no contact form on this page. Write to us directly:</p>
+      <a class="btn btn-primary" href="mailto:contact@cloudclear.ai">contact@cloudclear.ai</a>
     </div>
   </div>
 </section>
@@ -1654,144 +1569,28 @@ footer{ padding:64px 0 32px; }
         <a href="#about">About</a>
         <a href="#workflow">Workflow</a>
         <a href="#models">AI Models</a>
-        <a href="#demo">Live Demo</a>
+        <a href="#demo">Get Started</a>
       </div>
       <div class="footer-col">
         <h5>Resources</h5>
         <a href="#research">Research</a>
-        <a href="#">Documentation</a>
-        <a href="#">GitHub</a>
         <a href="#datasets">Datasets</a>
+        <a href="#faq">FAQ</a>
       </div>
       <div class="footer-col">
-        <h5>Legal</h5>
-        <a href="#">Privacy policy</a>
-        <a href="#">Terms of use</a>
+        <h5>Account</h5>
+        <a href="login.html">Log in</a>
+        <a href="register.html">Sign up</a>
         <a href="#contact">Contact</a>
       </div>
     </div>
     <div class="footer-bottom">
       <span>&copy; 2026 CloudClear AI. Built for research &amp; demonstration purposes.</span>
-      <span class="fb-links">
-        <a href="#">GitHub</a>
-        <a href="#">LinkedIn</a>
-      </span>
     </div>
   </div>
 </footer>
 
 </div><!-- /marketingView -->
-
-<!-- ============================================================
-     AUTH VIEW (login / register) — hidden until requested
-============================================================ -->
-<div id="authView" class="auth-view" hidden>
-  <div class="glass auth-card">
-    <span class="auth-back" id="authBackBtn">&larr; Back to home</span>
-    <div class="brand" style="margin-bottom:20px;">
-      <span class="brand-mark" aria-hidden="true"></span>
-      CloudClear<span style="color:var(--cyan-bright)">AI</span>
-    </div>
-
-    <div id="loginPane">
-      <h1>Log in</h1>
-      <p class="auth-sub">Access your projects, uploads, and reconstruction history.</p>
-      <form id="loginForm">
-        <div class="form-row">
-          <label for="loginEmail">Email</label>
-          <input type="email" id="loginEmail" required placeholder="you@example.com" />
-        </div>
-        <div class="form-row">
-          <label for="loginPassword">Password</label>
-          <input type="password" id="loginPassword" required placeholder="Your password" />
-        </div>
-        <button type="submit" class="btn btn-primary btn-block" id="loginSubmitBtn">Log in</button>
-        <div class="auth-msg" id="loginMsg"></div>
-      </form>
-      <div class="auth-switch">Don't have an account? <a id="goToRegister">Sign up</a></div>
-    </div>
-
-    <div id="registerPane" hidden>
-      <h1>Create your account</h1>
-      <p class="auth-sub">Sign up to upload imagery and run reconstructions.</p>
-      <form id="registerForm">
-        <div class="form-row">
-          <label for="regName">Full name</label>
-          <input type="text" id="regName" required minlength="2" maxlength="100" placeholder="Your full name" />
-        </div>
-        <div class="form-row">
-          <label for="regEmail">Email</label>
-          <input type="email" id="regEmail" required placeholder="you@example.com" />
-        </div>
-        <div class="form-row">
-          <label for="regPassword">Password</label>
-          <input type="password" id="regPassword" required minlength="8" placeholder="At least 8 characters, 1 letter + 1 number" />
-        </div>
-        <button type="submit" class="btn btn-primary btn-block" id="registerSubmitBtn">Create account</button>
-        <div class="auth-msg" id="registerMsg"></div>
-      </form>
-      <div class="auth-switch">Already have an account? <a id="goToLogin">Log in</a></div>
-    </div>
-  </div>
-</div>
-
-<!-- ============================================================
-     APP VIEW (authenticated dashboard) — hidden until session confirmed
-============================================================ -->
-<div id="appView" class="app-view" hidden>
-  <div class="container">
-    <div class="app-head">
-      <h1 id="greeting">Welcome</h1>
-      <p>Upload a LISS-IV scene and run the real reconstruction pipeline against your account.</p>
-    </div>
-
-    <div class="glass" style="padding:28px; margin-bottom:20px;">
-      <p class="eyebrow">ACCOUNT</p>
-      <div class="row"><span>Name</span><span id="uName"></span></div>
-      <div class="row"><span>Email</span><span id="uEmail"></span></div>
-      <div class="row"><span>Role</span><span id="uRole"></span></div>
-      <div class="row"><span>Email verified</span><span id="uVerified"></span></div>
-    </div>
-
-    <div class="glass demo-shell" style="margin-bottom:20px;">
-      <div class="demo-panel">
-        <p class="eyebrow">RUN PIPELINE</p>
-        <div class="dropzone" id="appDropzone" tabindex="0" role="button" aria-label="Upload a satellite image to run reconstruction">
-          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 16V4m0 0L7 9m5-5 5 5M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
-          <div class="dz-title">Drop a satellite image here</div>
-          <div class="dz-sub">or click to browse &middot; PNG, JPG, TIF</div>
-          <input type="file" id="appFileInput" accept="image/*" hidden />
-        </div>
-
-        <div class="demo-steps" id="appDemoSteps">
-          <div class="demo-step-row" data-step="0"><span class="ds-dot"></span> Image uploaded</div>
-          <div class="demo-step-row" data-step="1"><span class="ds-dot"></span> Sent to backend</div>
-          <div class="demo-step-row" data-step="2"><span class="ds-dot"></span> Cloud detection &amp; masking</div>
-          <div class="demo-step-row" data-step="3"><span class="ds-dot"></span> AI reconstruction</div>
-          <div class="demo-step-row" data-step="4"><span class="ds-dot"></span> Cloud-free output ready</div>
-        </div>
-        <div class="progress-track"><div class="progress-fill" id="appProgressFill"></div></div>
-        <div class="progress-pct" id="appProgressPct">Awaiting upload</div>
-      </div>
-
-      <div class="demo-panel">
-        <div class="demo-result-box" id="appDemoResult">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg>
-          <div class="dr-title">Result preview</div>
-          <div class="dr-sub">Your reconstructed output will appear here after processing completes.</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="glass" style="padding:28px;">
-      <p style="font-size:13px; color:var(--text-faint); line-height:1.6;">
-        This calls your real backend at <code id="appEndpointLabel"></code> with your access token — no mock timers.
-        If your FastAPI reconstruction route uses a different path or response shape, it just needs a small tweak
-        in the script below.
-      </p>
-    </div>
-  </div>
-</div>
 
 </main>
 
@@ -1992,14 +1791,10 @@ footer{ padding:64px 0 32px; }
      DATA: AI MODELS
   ============================================================ */
   var MODELS = [
-    { name:'U-Net', purpose:'Pixel-precise cloud segmentation via encoder-decoder with skip connections.', architecture:'Symmetric encoder-decoder CNN with skip connections preserving spatial detail lost during downsampling.', advantages:'Strong on small datasets; precise boundaries; fast to train.', accuracy:'IoU 0.89 on WHU Cloud test split', complexity:2 },
-    { name:'DeepLabV3+', purpose:'Multi-scale cloud segmentation using atrous convolution.', architecture:'Atrous Spatial Pyramid Pooling with a decoder module for sharper segmentation boundaries.', advantages:'Captures both fine cloud edges and large cloud banks in one pass.', accuracy:'mIoU 0.91 on SPARCS benchmark', complexity:3 },
-    { name:'Mask R-CNN', purpose:'Instance-level detection and masking of individual cloud formations.', architecture:'Region proposal network plus a segmentation branch over each detected region.', advantages:'Separates overlapping cloud instances; useful for cirrus vs. cumulus distinction.', accuracy:'AP 0.83 across cloud classes', complexity:4 },
-    { name:'Pix2Pix', purpose:'Conditional GAN for direct cloudy-to-clean image translation.', architecture:'U-Net generator with a PatchGAN discriminator trained on paired cloudy/clean image data.', advantages:'Fast inference; good texture fidelity on small masked regions.', accuracy:'PSNR 29.8 dB on LISS-IV val set', complexity:3 },
-    { name:'CycleGAN', purpose:'Unpaired cloudy-to-clean translation when matched ground truth is unavailable.', architecture:'Two generator-discriminator pairs with a cycle-consistency loss enforcing reversible translation.', advantages:'No paired training data required; generalizes across sensors.', accuracy:'SSIM 0.87 on cross-domain test', complexity:4 },
-    { name:'Diffusion Models', purpose:'Iterative denoising-based reconstruction for large, irregular cloud masks.', architecture:'U-Net backbone trained to reverse a forward noising process, conditioned on unmasked context.', advantages:'Highest visual stability on large occlusions; fewer seam artifacts.', accuracy:'PSNR 31.4 dB, SSIM 0.94', complexity:5 },
-    { name:'LaMa', purpose:'Large-mask inpainting using Fourier convolutions for global context.', architecture:'Fast Fourier Convolution layers giving the receptive field full-image reach even early in the network.', advantages:'Excels specifically on large masked regions, common with thick cloud cover.', accuracy:'PSNR 30.6 dB on large-mask subset', complexity:4 },
-    { name:'Vision Transformer', purpose:'Global self-attention for initial cloud detection across the full scene.', architecture:'Patch-based transformer encoder applying self-attention across the entire image at once.', advantages:'Captures long-range context; strong at distinguishing thin cirrus from haze.', accuracy:'F1 0.92 on detection benchmark', complexity:5 }
+    { name:'LaMa', kind:'Trained network', purpose:'Large-mask inpainting with Fourier convolutions (Suvorov et al., 2021).', architecture:'Pretrained LaMa checkpoint (trained on Places2, not on satellite imagery), run on CPU. If the weights cannot be loaded the service falls back to OpenCV Navier-Stokes inpainting without recording it.', advantages:'Handles large masked regions better than classical fills.', accuracy:'No validated benchmark for satellite imagery is published here.' },
+    { name:'Diffusion (classical)', kind:'OpenCV', purpose:'Two passes of OpenCV Telea inpainting (radius 3, then 9).', architecture:'Deterministic fast-marching inpainting applied twice. Not a diffusion neural network; the name is only an API label.', advantages:'Fast and needs no model weights.', accuracy:'No benchmark published.' },
+    { name:'GAN (classical)', kind:'OpenCV', purpose:'Single pass of OpenCV Telea inpainting (radius 9).', architecture:'Deterministic fast-marching inpainting with a large radius. Not a GAN; the name is only an API label.', advantages:'Fast and needs no model weights.', accuracy:'No benchmark published.' },
+    { name:'U-Net (classical)', kind:'OpenCV', purpose:'Single pass of OpenCV Telea inpainting (radius 3).', architecture:'Deterministic fast-marching inpainting with a small radius. Not a U-Net; the name is only an API label.', advantages:'Fastest option; suits small masks.', accuracy:'No benchmark published.' }
   ];
 
   var modelGrid = document.getElementById('modelGrid');
@@ -2013,7 +1808,7 @@ footer{ padding:64px 0 32px; }
       '<div class="model-name">'+m.name+'</div>' +
       '<div class="model-purpose">'+m.purpose+'</div>' +
       '<div class="model-meta"><span>VIEW DETAILS</span>' +
-      '<span class="complexity-dots">'+[1,2,3,4,5].map(function(d){ return '<span class="'+(d<=m.complexity?'fill':'')+'"></span>'; }).join('')+'</span></div>';
+      '<span>'+m.kind+'</span></div>';
     function open(){ openModelModal(m); }
     card.addEventListener('click', open);
     card.addEventListener('keydown', function(e){ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); open(); } });
@@ -2030,9 +1825,9 @@ footer{ padding:64px 0 32px; }
       '</button>' +
       '<h3 id="modalTitle"></h3>' +
       '<div class="modal-sub" id="modalSub"></div>' +
-      '<div class="modal-field"><div class="mf-label">ARCHITECTURE</div><div class="mf-val" id="modalArch"></div></div>' +
-      '<div class="modal-field"><div class="mf-label">ADVANTAGES</div><div class="mf-val" id="modalAdv"></div></div>' +
-      '<div class="modal-field"><div class="mf-label">ACCURACY</div><div class="mf-val" id="modalAcc"></div></div>' +
+      '<div class="modal-field"><div class="mf-label">WHAT RUNS</div><div class="mf-val" id="modalArch"></div></div>' +
+      '<div class="modal-field"><div class="mf-label">NOTES</div><div class="mf-val" id="modalAdv"></div></div>' +
+      '<div class="modal-field"><div class="mf-label">BENCHMARKS</div><div class="mf-val" id="modalAcc"></div></div>' +
     '</div>';
   document.body.appendChild(modalOverlay);
   var lastFocused = null;
@@ -2060,13 +1855,13 @@ footer{ padding:64px 0 32px; }
      DATA: DATASETS
   ============================================================ */
   var DATASETS = [
-    { name:'LISS-IV', desc:'ISRO Resourcesat-2/2A multispectral sensor data — the primary domain target for this pipeline.', res:'5.6 m/px', avail:'Restricted', use:'Domain-specific training & validation' },
-    { name:'Sentinel-2', desc:'ESA open multispectral imagery with frequent revisit, used for cross-sensor generalization.', res:'10 m/px', avail:'Open', use:'Pretraining & generalization' },
-    { name:'Landsat-8', desc:'USGS/NASA long-running multispectral archive, useful for historical comparison.', res:'30 m/px', avail:'Open', use:'Cross-sensor benchmarking' },
-    { name:'SEN12MS', desc:'Paired Sentinel-1/2 patches with land cover labels across four seasons.', res:'10 m/px', avail:'Open', use:'Multi-season robustness testing' },
-    { name:'RICE Dataset', desc:'Removal of Clouds dataset — paired cloudy/cloud-free image sets purpose-built for reconstruction.', res:'Variable', avail:'Open', use:'Reconstruction model training' },
-    { name:'WHU Cloud Dataset', desc:'Wuhan University labeled cloud and shadow masks across diverse terrain types.', res:'Variable', avail:'Open', use:'Cloud detection & segmentation' },
-    { name:'SPARCS', desc:'Spatial Procedures for Automated Removal of Cloud and Shadow, Landsat-based.', res:'30 m/px', avail:'Open', use:'Segmentation benchmarking' }
+    { name:'LISS-IV', desc:'ISRO Resourcesat-2/2A multispectral sensor. Access is through NRSC/ISRO data channels.', res:'about 5.8 m/px', avail:'Restricted', use:'Reference sensor; not used for training here' },
+    { name:'Sentinel-2', desc:'ESA open multispectral imagery with frequent revisit.', res:'10 m/px (visible/NIR bands)', avail:'Public', use:'Reference only' },
+    { name:'Landsat-8', desc:'USGS/NASA multispectral archive.', res:'30 m/px (multispectral)', avail:'Public', use:'Reference only' },
+    { name:'SEN12MS', desc:'Paired Sentinel-1/2 patches with land-cover labels across four seasons (Schmitt et al., 2019).', res:'10 m/px', avail:'Public', use:'Reference only' },
+    { name:'RICE', desc:'Remote sensing Image Cloud rEmoving dataset: paired cloudy and cloud-free images (Lin et al., 2019).', res:'Varies by subset', avail:'Public', use:'Reference only' },
+    { name:'WHU Cloud Dataset', desc:'Wuhan University cloud and cloud-shadow masks across varied terrain.', res:'Varies', avail:'Public', use:'Reference only' },
+    { name:'SPARCS', desc:'Landsat-based cloud and shadow validation masks (Hughes & Hayes, 2014).', res:'30 m/px', avail:'Public', use:'Reference only' }
   ];
   var datasetGrid = document.getElementById('datasetGrid');
   DATASETS.forEach(function(d){
@@ -2076,8 +1871,8 @@ footer{ padding:64px 0 32px; }
       '<div class="ds-head"><span class="ds-name">'+d.name+'</span><span class="ds-pill'+(d.avail==='Restricted'?' limited':'')+'">'+d.avail.toUpperCase()+'</span></div>' +
       '<p class="ds-desc">'+d.desc+'</p>' +
       '<div class="ds-meta-row"><span>RESOLUTION</span><b>'+d.res+'</b></div>' +
-      '<div class="ds-meta-row"><span>USE CASE</span><b>'+d.use+'</b></div>' +
-      '<a href="#" class="ds-link">Download / access info →</a>';
+      '<div class="ds-meta-row"><span>STATUS HERE</span><b>'+d.use+'</b></div>' +
+      '';
     datasetGrid.appendChild(card);
   });
 
@@ -2085,14 +1880,14 @@ footer{ padding:64px 0 32px; }
      DATA: FEATURES
   ============================================================ */
   var FEATURES = [
-    { icon:'M9.88 9.88a3 3 0 1 0 4.24 4.24M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68M6.61 6.61A13.5 13.5 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61M1 1l22 22', title:'Cloud detection', desc:'Flags occluded regions across the full scene before any reconstruction begins.' },
-    { icon:'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z', title:'Cloud segmentation', desc:'Pixel-level boundaries separate thin cirrus from dense cumulus formations.' },
-    { icon:'M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6', title:'Image inpainting', desc:'Fills small-to-medium masked regions using context-aware patch synthesis.' },
-    { icon:'M17 8l4 4-4 4M7 8l-4 4 4 4M14 4l-4 16', title:'GAN reconstruction', desc:'Adversarially trained generation for sharp, realistic texture recovery.' },
-    { icon:'M12 2a10 10 0 1 0 10 10', title:'Diffusion reconstruction', desc:'Step-wise denoising for stable results on large, irregular cloud masks.' },
-    { icon:'M13 2 3 14h7l-1 8 10-12h-7l1-8z', title:'Fast processing', desc:'Optimized inference pipeline targets sub-minute turnaround per scene.' },
-    { icon:'M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7', title:'High resolution', desc:'Preserves native 5.6 m/px LISS-IV resolution through the full pipeline.' },
-    { icon:'M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15z', title:'Research ready', desc:'Exports confidence maps and intermediate stages for reproducible evaluation.' }
+    { icon:'M9.88 9.88a3 3 0 1 0 4.24 4.24M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68M6.61 6.61A13.5 13.5 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61M1 1l22 22', title:'Cloud masking', desc:'Brightness and saturation thresholds flag likely cloud pixels, then morphology cleans the mask.' },
+    { icon:'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z', title:'Confidence map', desc:'A per-pixel map separates observed pixels from reconstructed ones, downloadable with each result.' },
+    { icon:'M12 2a10 10 0 1 0 10 10', title:'LaMa inpainting', desc:'A pretrained large-mask inpainting network, run on CPU.' },
+    { icon:'M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6', title:'Classical inpainting', desc:'Three OpenCV Telea variants for fast, deterministic fills.' },
+    { icon:'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', title:'Project workspace', desc:'Organise images and experiments by project and reopen any past result.' },
+    { icon:'M13 2 3 14h7l-1 8 10-12h-7l1-8z', title:'Background queue', desc:'Jobs run in a worker; status moves from queued to running to completed or failed.' },
+    { icon:'M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7', title:'Before/after viewer', desc:'Compare, zoom and pan results in the browser. TIFF originals cannot be previewed.' },
+    { icon:'M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15z', title:'No invented metrics', desc:'Metrics appear only when the backend produces them. Real uploads have no reference image, so PSNR and SSIM are not shown.' }
   ];
   var featuresGrid = document.getElementById('featuresGrid');
   FEATURES.forEach(function(f){
@@ -2114,7 +1909,6 @@ footer{ padding:64px 0 32px; }
     { icon:'M2 12h2a8 8 0 0 1 16 0h2M5 16c1.5 2 3.5 3 7 3s5.5-1 7-3', label:'Flood detection' },
     { icon:'M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5', label:'Disaster management' },
     { icon:'M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6 5.6 18.4', label:'Climate research' },
-    { icon:'M12 2 4 6v6c0 5.5 3.5 8.5 8 10 4.5-1.5 8-4.5 8-10V6l-8-4zM9 12l2 2 4-4', label:'Military surveillance' },
     { icon:'M12 2s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z', label:'Water resource mgmt.' }
   ];
   var appsGrid = document.getElementById('appsGrid');
@@ -2128,59 +1922,9 @@ footer{ padding:64px 0 32px; }
   });
 
   /* ============================================================
-     DATA: METRICS + BAR CHART
-  ============================================================ */
-  var METRICS = [
-    { label:'PSNR', val:'31.4', full:'dB, mean' },
-    { label:'SSIM', val:'0.94', full:'structural similarity' },
-    { label:'MAE', val:'0.021', full:'mean absolute error' },
-    { label:'RMSE', val:'0.038', full:'root mean sq. error' },
-    { label:'IoU', val:'0.91', full:'mask overlap' }
-  ];
-  var metricsGrid = document.getElementById('metricsGrid');
-  METRICS.forEach(function(m){
-    var card = document.createElement('div');
-    card.className = 'glass card-hover metric-card reveal';
-    card.innerHTML = '<div class="metric-val">'+m.val+'</div><div class="metric-label">'+m.label+'</div><div class="metric-full">'+m.full+'</div>';
-    metricsGrid.appendChild(card);
-  });
-
-  var BARS = [
-    { label:'Diffusion', val:94 },
-    { label:'LaMa', val:88 },
-    { label:'Pix2Pix', val:85 },
-    { label:'CycleGAN', val:82 },
-    { label:'U-Net', val:79 }
-  ];
-  var barChart = document.getElementById('barChart');
-  BARS.forEach(function(b){
-    var row = document.createElement('div');
-    row.className = 'bar-row';
-    row.innerHTML =
-      '<span class="bar-label">'+b.label+'</span>' +
-      '<div class="bar-track"><div class="bar-fill" data-target="'+b.val+'"></div></div>' +
-      '<span class="bar-val">0.'+b.val+'</span>';
-    barChart.appendChild(row);
-  });
-  var barFills = barChart.querySelectorAll('.bar-fill');
-  if('IntersectionObserver' in window){
-    var barIo = new IntersectionObserver(function(entries){
-      entries.forEach(function(e){
-        if(e.isIntersecting){
-          barFills.forEach(function(f){ f.style.width = f.getAttribute('data-target') + '%'; });
-          barIo.unobserve(e.target);
-        }
-      });
-    }, { threshold:0.4 });
-    barIo.observe(barChart);
-  } else {
-    barFills.forEach(function(f){ f.style.width = f.getAttribute('data-target') + '%'; });
-  }
-
-  /* ============================================================
      DATA: TECH STACK
   ============================================================ */
-  var TECH = ['Python','FastAPI','PyTorch','TensorFlow','OpenCV','NumPy','Rasterio','GDAL','Albumentations','React','Tailwind CSS','Framer Motion','Docker','GitHub'];
+  var TECH = ['HTML / CSS / JS','Node.js','Express','MongoDB','Redis','BullMQ','Cloudinary','Python','FastAPI','PyTorch','OpenCV','scikit-image','NumPy','Docker'];
   var techColors = ['#3FD8EE','#9B8FFF','#4ADE9C','#E0A23F'];
   var techGrid = document.getElementById('techGrid');
   TECH.forEach(function(t, i){
@@ -2191,51 +1935,30 @@ footer{ padding:64px 0 32px; }
   });
 
   /* ============================================================
-     DATA: TEAM
-  ============================================================ */
-  var TEAM = [
-    { name:'Aarav Mehta', role:'Lead ML Engineer', initials:'AM' },
-    { name:'Priya Nair', role:'Remote Sensing Researcher', initials:'PN' },
-    { name:'Rohan Iyer', role:'Backend & Infra', initials:'RI' },
-    { name:'Sana Qureshi', role:'Frontend & Visualization', initials:'SQ' }
-  ];
-  var teamGrid = document.getElementById('teamGrid');
-  TEAM.forEach(function(t){
-    var card = document.createElement('div');
-    card.className = 'glass card-hover team-card reveal';
-    card.innerHTML =
-      '<div class="team-avatar"><span>'+t.initials+'</span></div>' +
-      '<div class="t-name">'+t.name+'</div><div class="t-role">'+t.role+'</div>' +
-      '<div class="team-links">' +
-        '<a href="#" aria-label="GitHub"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.58 9.58 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85v2.75c0 .26.18.58.69.48A10 10 0 0 0 12 2z"/></svg></a>' +
-        '<a href="#" aria-label="LinkedIn"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9h4v12H3V9zm6.5 0H13v1.71h.05c.5-.95 1.74-1.95 3.58-1.95 3.83 0 4.37 2.52 4.37 5.8V21h-4v-5.6c0-1.34-.02-3.05-1.87-3.05-1.87 0-2.16 1.46-2.16 2.96V21h-4V9z"/></svg></a>' +
-        '<a href="#" aria-label="Email"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m4 6 8 7 8-7M4 6h16v12H4z"/></svg></a>' +
-      '</div>';
-    teamGrid.appendChild(card);
-  });
-
-  /* ============================================================
      DATA: RESEARCH PAPERS + FUTURE SCOPE
   ============================================================ */
   var PAPERS = [
-    { title:'Image-to-Image Translation with Conditional Adversarial Networks', meta:'Isola et al. — Pix2Pix foundation' },
-    { title:'Denoising Diffusion Probabilistic Models', meta:'Ho, Jain & Abbeel — diffusion foundations' },
-    { title:'Resolution-robust Large Mask Inpainting with Fourier Convolutions', meta:'Suvorov et al. — LaMa architecture' },
-    { title:'An Image is Worth 16x16 Words: Transformers for Image Recognition', meta:'Dosovitskiy et al. — ViT foundation' }
+    { title:'Image-to-Image Translation with Conditional Adversarial Networks', meta:'Isola et al. - Pix2Pix (background; not implemented here)', url:'https://arxiv.org/abs/1611.07004' },
+    { title:'Denoising Diffusion Probabilistic Models', meta:'Ho, Jain & Abbeel - diffusion foundations (background; not implemented here)', url:'https://arxiv.org/abs/2006.11239' },
+    { title:'Resolution-robust Large Mask Inpainting with Fourier Convolutions', meta:'Suvorov et al. - LaMa (used here, pretrained checkpoint)', url:'https://arxiv.org/abs/2109.07161' },
+    { title:'An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale', meta:'Dosovitskiy et al. - ViT (background; not implemented here)', url:'https://arxiv.org/abs/2010.11929' }
   ];
   var paperList = document.getElementById('paperList');
   PAPERS.forEach(function(p){
-    var row = document.createElement('div');
+    var row = document.createElement('a');
     row.className = 'paper-row';
+    row.href = p.url;
+    row.target = '_blank';
+    row.rel = 'noopener noreferrer';
     row.innerHTML = '<div><div class="p-title">'+p.title+'</div><div class="p-meta">'+p.meta+'</div></div><span class="p-arrow">↗</span>';
     paperList.appendChild(row);
   });
 
   var FUTURE = [
-    'Extend training coverage to additional ISRO sensors beyond LISS-IV (LISS-III, AWiFS).',
-    'Investigate temporal fusion — using prior cloud-free revisits to constrain reconstruction.',
-    'Quantify reconstruction confidence per-pixel for downstream decision-making.',
-    'Explore on-board / edge inference for near-real-time disaster response tasking.'
+    'Train and evaluate reconstruction models on satellite imagery (the current LaMa checkpoint was trained on Places2).',
+    'Replace the threshold-based cloud mask with a trained segmentation model.',
+    'Report PSNR and SSIM on a held-out set that has cloud-free references.',
+    'Support multi-band and 16-bit GeoTIFF input.'
   ];
   var futureList = document.getElementById('futureList');
   FUTURE.forEach(function(f){
@@ -2249,11 +1972,11 @@ footer{ padding:64px 0 32px; }
      DATA: FAQ
   ============================================================ */
   var FAQS = [
-    { q:'What is LISS-IV?', a:'LISS-IV (Linear Imaging Self-Scanning Sensor-IV) is a high-resolution multispectral sensor aboard ISRO\'s Resourcesat-2 and 2A satellites, capturing imagery at roughly 5.6 m per pixel — used widely for agriculture, urban, and resource mapping.' },
-    { q:'Why Generative AI for cloud removal?', a:'Traditional cloud-masking simply discards occluded pixels. Generative models instead estimate plausible terrain underneath the cloud using surrounding spatial context, recovering usable information rather than leaving a gap.' },
-    { q:'Why diffusion models specifically?', a:'Diffusion models reconstruct an image gradually through many small denoising steps rather than one forward pass, which tends to produce more stable, seam-free results on large or irregularly shaped cloud masks compared to single-shot GAN inpainting.' },
-    { q:'What datasets are used?', a:'Training and evaluation draw on LISS-IV scenes alongside open datasets including Sentinel-2, Landsat-8, SEN12MS, the RICE dataset, WHU Cloud Dataset, and SPARCS — covering varied resolutions, sensors, and cloud conditions.' },
-    { q:'How accurate is the model?', a:'Across held-out test scenes, the best-performing reconstruction approach (diffusion-based) reaches a mean PSNR of 31.4 dB and SSIM of 0.94. Accuracy varies by cloud mask size and terrain complexity — large, irregular masks remain the harder case.' }
+    { q:'What is LISS-IV?', a:'LISS-IV (Linear Imaging Self-Scanning Sensor-IV) is a high-resolution multispectral sensor on ISRO\'s Resourcesat-2 and 2A satellites, with a spatial resolution of about 5.8 m.' },
+    { q:'What does the reconstruction do?', a:'It finds likely cloud pixels with a simple brightness and saturation threshold, then fills those pixels using the model you choose. The filled pixels are estimates, not measurements.' },
+    { q:'Which models run?', a:'Four options are accepted: LaMa, a pretrained neural network, and three classical OpenCV inpainting variants labelled GAN, Diffusion and U-Net. The classical ones are not neural networks.' },
+    { q:'Were the models trained on the datasets listed here?', a:'No. The datasets are reference resources. The LaMa checkpoint was trained on Places2 by its authors, and the OpenCV options involve no training.' },
+    { q:'How accurate is it?', a:'There are no validated accuracy figures for this deployment. A real upload has no cloud-free reference, so PSNR and SSIM cannot be computed for it. Inspect the result and the confidence map before relying on it.' }
   ];
   var faqList = document.getElementById('faqList');
   FAQS.forEach(function(f, idx){
@@ -2326,110 +2049,6 @@ footer{ padding:64px 0 32px; }
   });
 
   /* ============================================================
-     LIVE DEMO SIMULATION
-  ============================================================ */
-  var dropzone = document.getElementById('dropzone');
-  var fileInput = document.getElementById('fileInput');
-  var progressFill = document.getElementById('progressFill');
-  var progressPct = document.getElementById('progressPct');
-  var demoSteps = document.querySelectorAll('.demo-step-row');
-  var demoResult = document.getElementById('demoResult');
-  var demoRunning = false;
-
-  dropzone.addEventListener('click', function(){ if(!demoRunning) fileInput.click(); });
-  dropzone.addEventListener('keydown', function(e){ if((e.key==='Enter'||e.key===' ') && !demoRunning){ e.preventDefault(); fileInput.click(); } });
-  dropzone.setAttribute('tabindex','0');
-  dropzone.setAttribute('role','button');
-  dropzone.setAttribute('aria-label','Upload a satellite image to run the demo pipeline');
-
-  ['dragenter','dragover'].forEach(function(evt){
-    dropzone.addEventListener(evt, function(e){ e.preventDefault(); dropzone.classList.add('drag'); });
-  });
-  ['dragleave','drop'].forEach(function(evt){
-    dropzone.addEventListener(evt, function(e){ e.preventDefault(); dropzone.classList.remove('drag'); });
-  });
-  dropzone.addEventListener('drop', function(e){
-    if(demoRunning) return;
-    var files = e.dataTransfer.files;
-    if(files && files.length) runDemo(files[0]);
-  });
-  fileInput.addEventListener('change', function(){
-    if(demoRunning) return;
-    if(fileInput.files && fileInput.files.length) runDemo(fileInput.files[0]);
-  });
-
-  function setStepState(idx, state){
-    demoSteps.forEach(function(row){
-      var rowIdx = parseInt(row.getAttribute('data-step'), 10);
-      row.classList.remove('active','done');
-      if(rowIdx < idx) row.classList.add('done');
-      else if(rowIdx === idx) row.classList.add(state);
-    });
-  }
-
-  function runDemo(file){
-    demoRunning = true;
-    dropzone.querySelector('.dz-title').textContent = file.name || 'Processing image';
-    dropzone.querySelector('.dz-sub').textContent = 'Running pipeline…';
-    demoResult.classList.remove('ready');
-    demoResult.innerHTML =
-      '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg>' +
-      '<div class="dr-title">Processing…</div><div class="dr-sub">Running cloud detection and reconstruction.</div>';
-
-    var stageLabels = ['Image uploaded','Detecting cloud cover','Generating cloud mask','Running AI reconstruction','Finalizing cloud-free output'];
-    var totalStages = 5;
-    var stageDur = 850;
-    var stage = 0;
-
-    setStepState(0, 'active');
-    progressPct.textContent = stageLabels[0] + '…';
-
-    function advance(){
-      var pct = Math.round(((stage+1)/totalStages) * 100);
-      progressFill.style.width = pct + '%';
-      progressPct.textContent = pct + '% — ' + (stageLabels[stage] || 'Done');
-      setStepState(stage, 'active');
-      stage++;
-      if(stage < totalStages){
-        setTimeout(advance, stageDur);
-      } else {
-        setTimeout(function(){
-          setStepState(totalStages, 'done'); // marks all as done
-          progressPct.textContent = '100% — Reconstruction complete';
-          demoResult.classList.add('ready');
-          demoResult.innerHTML =
-            '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--signal);"><path d="M5 13l4 4L19 7"/></svg>' +
-            '<div class="dr-title">Reconstruction complete</div>' +
-            '<div class="dr-sub">Cloud-free output ready. Connect the FastAPI backend to download real results.</div>' +
-            '<button class="btn btn-ghost btn-sm" id="downloadBtn" style="margin-top:6px;">Download result</button>';
-          document.getElementById('downloadBtn').addEventListener('click', function(){
-            alert('This is a mock interface. Connect the FastAPI backend at GET /status to enable real downloads.');
-          });
-          dropzone.querySelector('.dz-title').textContent = 'Drop another satellite image';
-          dropzone.querySelector('.dz-sub').textContent = 'or click to browse · PNG, JPG, TIF';
-          demoRunning = false;
-        }, stageDur);
-      }
-    }
-    setTimeout(advance, stageDur);
-  }
-
-  /* ============================================================
-     CONTACT FORM (mock submit)
-  ============================================================ */
-  var contactForm = document.getElementById('contactForm');
-  var formStatus = document.getElementById('formStatus');
-  contactForm.addEventListener('submit', function(e){
-    e.preventDefault();
-    formStatus.classList.add('show');
-    contactForm.querySelector('button[type="submit"]').textContent = 'Sent ✓';
-    setTimeout(function(){
-      contactForm.reset();
-      contactForm.querySelector('button[type="submit"]').textContent = 'Send message';
-    }, 2400);
-  });
-
-  /* ============================================================
      INIT SCROLL REVEAL — runs last, once all static AND
      dynamically-injected .reveal elements exist in the DOM.
   ============================================================ */
@@ -2450,306 +2069,7 @@ footer{ padding:64px 0 32px; }
 
 
 <script src="config.js"></script>
-<script>
-(function(){
-  const RECONSTRUCT_ENDPOINT = `${window.API_BASE_URL}/reconstruct`;
-  const endpointLabelEl = document.getElementById('appEndpointLabel');
-  if (endpointLabelEl) endpointLabelEl.textContent = 'POST ' + RECONSTRUCT_ENDPOINT;
-
-  const marketingView = document.getElementById('marketingView');
-  const authView = document.getElementById('authView');
-  const appView = document.getElementById('appView');
-  const loginPane = document.getElementById('loginPane');
-  const registerPane = document.getElementById('registerPane');
-  const navCtaLoggedOut = document.getElementById('navCtaLoggedOut');
-  const navCtaLoggedIn = document.getElementById('navCtaLoggedIn');
-  const navUserChip = document.getElementById('navUserChip');
-
-  function hideAll(){
-    marketingView.hidden = true;
-    authView.hidden = true;
-    appView.hidden = true;
-  }
-
-  function showMarketing(){
-    hideAll();
-    marketingView.hidden = false;
-    window.scrollTo(0,0);
-  }
-
-  function showAuth(mode){
-    hideAll();
-    authView.hidden = false;
-    loginPane.hidden = mode !== 'login';
-    registerPane.hidden = mode !== 'register';
-    window.scrollTo(0,0);
-  }
-
-  function showApp(){
-    hideAll();
-    appView.hidden = false;
-    window.scrollTo(0,0);
-  }
-
-  function setLoggedInNav(user){
-    navCtaLoggedOut.hidden = true;
-    navCtaLoggedIn.hidden = false;
-    navUserChip.innerHTML = `<strong>${user.name}</strong>`;
-    document.getElementById('mobileLoginBtn').hidden = true;
-    document.getElementById('mobileRegisterBtn').hidden = true;
-    document.getElementById('mobileLogoutBtn').hidden = false;
-  }
-
-  function setLoggedOutNav(){
-    navCtaLoggedOut.hidden = false;
-    navCtaLoggedIn.hidden = true;
-    document.getElementById('mobileLoginBtn').hidden = false;
-    document.getElementById('mobileRegisterBtn').hidden = false;
-    document.getElementById('mobileLogoutBtn').hidden = true;
-  }
-
-  document.getElementById('navLoginBtn').addEventListener('click', e => { e.preventDefault(); showAuth('login'); });
-  document.getElementById('navRegisterBtn').addEventListener('click', e => { e.preventDefault(); showAuth('register'); });
-  document.getElementById('mobileLoginBtn').addEventListener('click', e => { e.preventDefault(); showAuth('login'); });
-  document.getElementById('mobileRegisterBtn').addEventListener('click', e => { e.preventDefault(); showAuth('register'); });
-  document.getElementById('goToRegister').addEventListener('click', () => showAuth('register'));
-  document.getElementById('goToLogin').addEventListener('click', () => showAuth('login'));
-  document.getElementById('authBackBtn').addEventListener('click', showMarketing);
-  document.getElementById('navLogoutBtn').addEventListener('click', e => { e.preventDefault(); logout(); });
-  document.getElementById('mobileLogoutBtn').addEventListener('click', e => { e.preventDefault(); logout(); });
-
-  // ---- session check on load: if a valid token exists, go straight to the app view ----
-  const accessToken = sessionStorage.getItem('accessToken');
-  if (accessToken) {
-    fetch(`${window.API_BASE_URL}/auth/me`, {
-      headers: { 'Authorization': `Bearer ${accessToken}` },
-      credentials: 'include',
-    })
-      .then(res => { if (!res.ok) throw new Error('Session expired'); return res.json(); })
-      .then(data => {
-        const user = data.data.user;
-        populateAccount(user);
-        setLoggedInNav(user);
-        showApp();
-      })
-      .catch(() => {
-        sessionStorage.clear();
-        setLoggedOutNav();
-        showMarketing();
-      });
-  } else {
-    setLoggedOutNav();
-  }
-
-  function populateAccount(user){
-    document.getElementById('greeting').textContent = `Welcome, ${user.name}`;
-    document.getElementById('uName').textContent = user.name;
-    document.getElementById('uEmail').textContent = user.email;
-    document.getElementById('uRole').textContent = user.role;
-    document.getElementById('uVerified').textContent = user.isEmailVerified ? 'Yes' : 'No';
-  }
-
-  function logout(){
-    fetch(`${window.API_BASE_URL}/auth/logout`, { method:'POST', credentials:'include' })
-      .catch(() => {})
-      .finally(() => {
-        sessionStorage.clear();
-        setLoggedOutNav();
-        showMarketing();
-      });
-  }
-
-  // ---- login form: on success, go straight to the app view (no dashboard.html) ----
-  const loginForm = document.getElementById('loginForm');
-  const loginMsg = document.getElementById('loginMsg');
-  const loginSubmitBtn = document.getElementById('loginSubmitBtn');
-
-  function showAuthMsg(el, text, type){
-    el.textContent = text;
-    el.className = 'auth-msg show ' + type;
-  }
-
-  loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    loginSubmitBtn.disabled = true;
-    loginSubmitBtn.textContent = 'Logging in...';
-    loginMsg.className = 'auth-msg';
-
-    const email = document.getElementById('loginEmail').value.trim();
-    const password = document.getElementById('loginPassword').value;
-
-    try {
-      const res = await fetch(`${window.API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Login failed');
-
-      sessionStorage.setItem('accessToken', data.data.accessToken);
-      sessionStorage.setItem('user', JSON.stringify(data.data.user));
-
-      showAuthMsg(loginMsg, 'Login successful! Loading your dashboard...', 'success');
-      populateAccount(data.data.user);
-      setLoggedInNav(data.data.user);
-      setTimeout(showApp, 500);
-    } catch (err) {
-      showAuthMsg(loginMsg, err.message || 'Something went wrong. Is the backend running?', 'error');
-    } finally {
-      loginSubmitBtn.disabled = false;
-      loginSubmitBtn.textContent = 'Log in';
-    }
-  });
-
-  // ---- register form ----
-  const registerForm = document.getElementById('registerForm');
-  const registerMsg = document.getElementById('registerMsg');
-  const registerSubmitBtn = document.getElementById('registerSubmitBtn');
-
-  registerForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    registerSubmitBtn.disabled = true;
-    registerSubmitBtn.textContent = 'Creating account...';
-    registerMsg.className = 'auth-msg';
-
-    const name = document.getElementById('regName').value.trim();
-    const email = document.getElementById('regEmail').value.trim();
-    const password = document.getElementById('regPassword').value;
-
-    try {
-      const res = await fetch(`${window.API_BASE_URL}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ name, email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Registration failed');
-
-      showAuthMsg(registerMsg, 'Account created! Check your email to verify, then log in.', 'success');
-      registerForm.reset();
-      setTimeout(() => showAuth('login'), 1800);
-    } catch (err) {
-      showAuthMsg(registerMsg, err.message || 'Something went wrong. Is the backend running?', 'error');
-    } finally {
-      registerSubmitBtn.disabled = false;
-      registerSubmitBtn.textContent = 'Create account';
-    }
-  });
-
-  // ---- real upload + reconstruction pipeline (app view) ----
-  const dropzone = document.getElementById('appDropzone');
-  const fileInput = document.getElementById('appFileInput');
-  const progressFill = document.getElementById('appProgressFill');
-  const progressPct = document.getElementById('appProgressPct');
-  const stepRows = document.querySelectorAll('#appDemoSteps .demo-step-row');
-  const resultBox = document.getElementById('appDemoResult');
-  let running = false;
-
-  dropzone.addEventListener('click', () => { if (!running) fileInput.click(); });
-  dropzone.addEventListener('keydown', (e) => {
-    if ((e.key === 'Enter' || e.key === ' ') && !running) { e.preventDefault(); fileInput.click(); }
-  });
-  ['dragenter','dragover'].forEach(evt => dropzone.addEventListener(evt, e => { e.preventDefault(); dropzone.classList.add('drag'); }));
-  ['dragleave','drop'].forEach(evt => dropzone.addEventListener(evt, e => { e.preventDefault(); dropzone.classList.remove('drag'); }));
-  dropzone.addEventListener('drop', e => {
-    if (running) return;
-    const files = e.dataTransfer.files;
-    if (files && files.length) runReconstruction(files[0]);
-  });
-  fileInput.addEventListener('change', () => {
-    if (running) return;
-    if (fileInput.files && fileInput.files.length) runReconstruction(fileInput.files[0]);
-  });
-
-  function setStep(idx, state){
-    stepRows.forEach(row => {
-      const rowIdx = parseInt(row.getAttribute('data-step'), 10);
-      row.classList.remove('active','done');
-      if (rowIdx < idx) row.classList.add('done');
-      else if (rowIdx === idx) row.classList.add(state);
-    });
-  }
-
-  function setProgress(pct, label){
-    progressFill.style.width = pct + '%';
-    progressPct.textContent = pct + '% — ' + label;
-  }
-
-  async function runReconstruction(file){
-    running = true;
-    dropzone.querySelector('.dz-title').textContent = file.name;
-    dropzone.querySelector('.dz-sub').textContent = 'Uploading…';
-    resultBox.classList.remove('ready','error');
-    resultBox.innerHTML = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg><div class="dr-title">Processing…</div><div class="dr-sub">Waiting on the backend pipeline.</div>';
-
-    setStep(0, 'active');
-    setProgress(10, 'Image uploaded');
-
-    try {
-      const formData = new FormData();
-      formData.append('image', file);
-
-      setStep(1, 'active');
-      setProgress(25, 'Sending to backend');
-
-      const res = await fetch(RECONSTRUCT_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${sessionStorage.getItem('accessToken')}` },
-        credentials: 'include',
-        body: formData,
-      });
-
-      setStep(2, 'active');
-      setProgress(55, 'Cloud detection & masking');
-
-      const contentType = res.headers.get('content-type') || '';
-      let payload = null;
-      if (contentType.includes('application/json')) {
-        payload = await res.json();
-      }
-
-      if (!res.ok) {
-        throw new Error((payload && payload.message) || `Request failed (${res.status})`);
-      }
-
-      setStep(3, 'active');
-      setProgress(80, 'AI reconstruction');
-
-      // Assumed response shape: { data: { resultUrl } }. Adjust to match your FastAPI response.
-      let resultUrl = payload && payload.data && (payload.data.resultUrl || payload.data.result_url);
-      if (!resultUrl && contentType.startsWith('image/')) {
-        const blob = await res.blob();
-        resultUrl = URL.createObjectURL(blob);
-      }
-
-      setStep(4, 'done');
-      setProgress(100, 'Reconstruction complete');
-      resultBox.classList.add('ready');
-
-      if (resultUrl) {
-        resultBox.innerHTML = `<img src="${resultUrl}" alt="Reconstructed output" />
-          <a class="btn btn-ghost btn-sm" href="${resultUrl}" download style="margin-top:6px;">Download result</a>`;
-      } else {
-        resultBox.innerHTML = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--signal);"><path d="M5 13l4 4L19 7"/></svg><div class="dr-title">Reconstruction complete</div><div class="dr-sub">Backend accepted the job but returned no result URL — check the response shape.</div>';
-      }
-
-      dropzone.querySelector('.dz-title').textContent = 'Drop another satellite image';
-      dropzone.querySelector('.dz-sub').textContent = 'or click to browse · PNG, JPG, TIF';
-    } catch (err) {
-      resultBox.classList.add('error');
-      resultBox.innerHTML = `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--danger, #E06A6A);"><circle cx="12" cy="12" r="10"/><path d="M12 8v5m0 3h.01"/></svg><div class="dr-title">Reconstruction failed</div><div class="dr-sub">${err.message}</div>`;
-      setProgress(0, 'Failed');
-      dropzone.querySelector('.dz-title').textContent = 'Try another image';
-      dropzone.querySelector('.dz-sub').textContent = 'or click to browse · PNG, JPG, TIF';
-    } finally {
-      running = false;
-    }
-  }
-})();
-</script>
+<script type="module" src="js/landing-auth.js"></script>
 
 </body>
 </html>

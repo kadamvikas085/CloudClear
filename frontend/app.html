@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Workspace — CloudClear AI</title>
+<meta name="robots" content="noindex" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<a href="#main" class="skip-link">Skip to content</a>
+<div class="bg-layer" aria-hidden="true"><div class="bg-glow"></div><div class="bg-grid"></div></div>
+
+<div id="boot" style="position:relative;z-index:2;min-height:100vh;display:flex;align-items:center;justify-content:center;gap:12px;color:var(--text-dim);font-size:14px;">
+  <span class="spinner" aria-hidden="true"></span> Checking your session…
+</div>
+
+<div class="app" id="app" hidden>
+  <aside class="sidebar" id="sidebar" aria-label="Primary">
+    <a class="brand" href="#/dashboard"><span class="brand-mark" aria-hidden="true"></span>CloudClear<span class="ai">AI</span></a>
+    <nav class="side-nav" id="sideNav" aria-label="Workspace"></nav>
+    <div class="side-foot"><a href="index.html">&larr; Public website</a></div>
+  </aside>
+  <div class="scrim" id="scrim" hidden></div>
+
+  <div class="main-col">
+    <header class="topbar">
+      <button type="button" class="icon-btn menu-btn" id="menuBtn" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false"></button>
+      <div class="top-title" id="topTitle">Dashboard</div>
+      <div class="top-spacer"></div>
+      <div class="top-actions">
+        <a class="btn btn-primary btn-sm" href="#/lab" id="topRun">Run reconstruction</a>
+        <div class="profile-wrap" id="notifWrap"></div>
+        <div class="profile-wrap" id="profileWrap"></div>
+      </div>
+    </header>
+    <main class="content" id="main" tabindex="-1" aria-live="polite"></main>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script type="module" src="js/app.js"></script>
+<noscript><p style="position:relative;z-index:2;padding:40px;color:#E8ECF4;">CloudClear AI needs JavaScript to run.</p></noscript>
+</body>
+</html>

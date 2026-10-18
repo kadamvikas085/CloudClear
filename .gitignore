@@ -1,0 +1,38 @@
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Node.js
+node_modules/
+
+# Logs
+*.log
+
+# Testing
+coverage/
+.pytest_cache/
+
+# IDE
+.vscode/
+
+# Additional generated files
+.venv-*/
+**/.venv-*/
+*.zip
+docker-compose.yml.backup
+.env
+.env.*
+!.env.example
+.venv/
+.venv-*/
+**/.venv-*/
+node_modules/
+*.zip
+docker-compose.yml.backup

@@ -1,0 +1,48 @@
+/* CloudClear AI — design tokens (shared by login, register and the app).
+   Values mirror the :root block of the public landing page. */
+:root {
+  /* Color */
+  --ink: #06080F;
+  --panel: #0B1220;
+  --panel-2: #0E1626;
+  --line: rgba(232, 236, 244, 0.08);
+  --line-strong: rgba(232, 236, 244, 0.16);
+  --text: #E8ECF4;
+  --text-dim: rgba(232, 236, 244, 0.62);
+  --text-faint: rgba(232, 236, 244, 0.38);
+  --cyan: #10B3C9;
+  --cyan-bright: #3FD8EE;
+  --violet: #7C6FE0;
+  --violet-bright: #9B8FFF;
+  --signal: #4ADE9C;
+  --amber: #E0A23F;
+  --danger: #E06A6A;
+
+  /* Type */
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Radii */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+
+  /* Spacing scale */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+
+  /* Shadows & motion */
+  --shadow-lift: 0 24px 48px -16px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 12px 32px -8px rgba(16, 179, 201, 0.5);
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* App layout */
+  --sidebar-w: 248px;
+  --topbar-h: 64px;
+}
