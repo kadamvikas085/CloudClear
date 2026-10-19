@@ -1,411 +1,272 @@
-<<<<<<< HEAD
 # CloudClear AI
 
-Generative reconstruction for LISS-IV satellite imagery — cloud removal, mask-aware inpainting and production-ready demo UI.
+CloudClear AI is a research prototype for exploring cloud detection and image
+inpainting workflows for optical satellite imagery. It combines a multi-page
+web interface, a Node.js API and background worker, and a Python inference
+service.
 
-## Overview
+> **Project status:** The application pipeline is implemented, but this is not
+> a validated operational satellite-imagery product. Cloud detection currently
+> uses a brightness/saturation heuristic. LaMa is the only selectable option
+> backed by a pretrained neural network; the other options use classical
+> OpenCV inpainting. See [Inference capabilities](#inference-capabilities) for
+> details.
 
-CloudClear AI is a research / demo platform that demonstrates cloud detection, cloud mask generation, and generative reconstruction (inpainting) for optical Earth observation imagery (targeting ISRO's LISS-IV sensor characteristics). The repo contains a lightweight frontend for visualization and interaction, a Node.js backend that exposes API endpoints, and an AI service (Python) that runs model inference or mock simulations.
+## Contents
 
-This README explains the problem statement, the high-level solution, the technology used, the repository layout, and step-by-step instructions to run and contribute.
+- [What's included](#whats-included)
+- [Architecture](#architecture)
+- [Inference capabilities](#inference-capabilities)
+- [Requirements](#requirements)
+- [Run with Docker](#run-with-docker)
+- [Run locally](#run-locally)
+- [Configuration](#configuration)
+- [API and service endpoints](#api-and-service-endpoints)
+- [Development](#development)
 
-## Problem Statement
+## What’s included
 
-Optical Earth observation is frequently compromised by clouds. For time-sensitive applications (agriculture, disaster response), waiting for a future revisit can be too late. The goal is to recover usable imagery by:
-- Detecting cloud-covered regions precisely
-- Producing pixel-accurate cloud masks
-- Reconstructing masked regions using generative models (GANs, diffusion, large-mask inpainting)
+- A static, multi-page frontend for authentication, projects, image
+  experiments, model selection, results, and settings.
+- An Express REST API with authentication, project and image management,
+  experiment history, dashboard summaries, notifications, and admin routes.
+- MongoDB-backed persistence and Redis/BullMQ queues for image processing and
+  email jobs.
+- A separate BullMQ worker, Socket.IO progress updates, Cloudinary upload
+  integration, and Swagger/OpenAPI documentation.
+- A FastAPI inference service with authenticated prediction and evaluation
+  endpoints.
 
-The platform aims to provide a clear, auditable pipeline where reconstructed pixels are labeled and confidence metadata can be exported for downstream workflows.
+## Architecture
 
-## Solution Overview
+```text
+Browser ── REST / Socket.IO ──> Express API ──> MongoDB
+                                    │
+                                    ├── Redis / BullMQ ──> Background worker
+                                    │                           │
+                                    └───────────────────────────┴──> FastAPI AI service
+```
 
-- Cloud detection: a classifier/ViT or U-Net identifies cloudy pixels.
-- Cloud segmentation: generate binary masks with precise boundaries (DeepLabV3+, U-Net variants).
-- Mask-aware reconstruction: use inpainting approaches (LaMa, Pix2Pix, diffusion models) conditioned on unmasked context to reconstruct occluded terrain.
-- Serving & demo: a FastAPI or similar inference service returns results; the frontend (`frontend/index.html`) offers an interactive demo, comparison slider, and account-based upload flow.
+The frontend is served as static files and is not included as a service in
+`docker-compose.yml`. MongoDB is also external to the Compose stack: provide a
+MongoDB URI that is reachable from the backend container.
 
-The repository includes a mock demo flow so contributors can view end-to-end behavior without running heavy ML models locally.
+## Inference capabilities
 
-## Key Features
+The AI service accepts `GAN`, `Diffusion`, `LaMa`, and `U-Net` as model names.
+Their current implementations are:
 
-- Interactive demo with upload, staged progress, and comparison slider
-- Model library abstraction (U-Net, DeepLabV3+, Pix2Pix, LaMa, Diffusion) represented in the UI
-- Cloud detection and mask visualization
-- Simple account/login demo flow integrated with the backend APIs
-- Extensible AI service layout for swapping in real models
+| Selection | Current implementation |
+|---|---|
+| `LaMa` | Pretrained LaMa inpainting model running on CPU. If the model cannot be loaded, inference falls back to OpenCV inpainting. |
+| `GAN` | OpenCV Telea inpainting; this is not a GAN. |
+| `Diffusion` | Two passes of OpenCV Telea inpainting; this is not a diffusion model. |
+| `U-Net` | OpenCV Telea inpainting; this is not a U-Net. |
 
-## Tech Stack
+Cloud regions are estimated with a classical HSV brightness and
+low-saturation heuristic, not a trained cloud-segmentation model. Results
+should be treated as experimental, especially on real satellite imagery.
 
-- Frontend: Vanilla HTML/CSS/JavaScript (single-page), modern CSS tokens and responsive layout
-- Backend: Node.js (Express/Koa style) — code in [backend/](backend/)
-- AI service: Python (FastAPI + PyTorch/other ML libs) — code in [ai-service/](ai-service/)
-- Containerization: `docker-compose.yml` for local orchestration
+`POST /predict` processes an image and returns the reconstructed image, a
+confidence map, and processing metadata. Reference metrics such as PSNR and
+SSIM are not reported for this endpoint because a matching cloud-free
+ground-truth image is not available.
 
-## Repository Structure
+`POST /evaluate` starts with a supplied clean image, adds a synthetic cloud,
+and calculates PSNR, SSIM, RMSE, MAE, and mask IoU against the known original
+and synthetic mask. These metrics are for this controlled synthetic test and
+do not establish performance on naturally cloudy imagery.
 
-- `docker-compose.yml` — optional local stack orchestration
-- `README.md` — this document
-- `ai-service/` — Python service, model code, FastAPI endpoints
-  - `main.py`, `lama_model.py`, `cloud_ops.py`, `requirements.txt`, `Dockerfile`
-- `backend/` — Node.js backend and API server
-  - `src/` — server source
-  - `controllers/`, `routes/`, `services/`, `models/`, `middlewares/` — typical MVC structure
-  - `package.json`, `Dockerfile`
-- `frontend/` — static website and demo
-  - `index.html` — main single-file frontend UI
-  - `config.js` — exposes `window.API_BASE_URL` used by the UI
+## Requirements
 
-You can open the main UI at: [frontend/index.html](frontend/index.html)
+- Node.js 18 or later and npm
+- Python 3.11 for the inference service
+- MongoDB (local or hosted) with a reachable connection URI
+- Redis 7 or later
+- Docker Engine with Docker Compose, if using the containerized setup
+- Cloudinary and SMTP credentials for the corresponding upload and email
+  features
 
-## Running Locally (development)
+LaMa model weights (approximately 196 MB) are downloaded when available,
+either during the container build or on the first local inference, and require
+internet access. PyTorch is installed separately from the Python requirements
+when running the AI service locally.
 
-Prerequisites
-- Node.js (16+ recommended)
-- Python 3.9+ (if using the AI service locally)
-- Docker & docker-compose (optional, recommended for consistency)
+## Run with Docker
 
-Option A — Quick demo using frontend + mock backend (no ML required)
+1. Create environment files from the templates:
 
-1. Start the Node backend (development):
+   ```powershell
+   Copy-Item backend/.env.example backend/.env
+   Copy-Item ai-service/.env.example ai-service/.env
+   ```
 
-```bash
-cd backend
-npm install
-# start (the exact script may be in package.json as "start" or "dev")
+2. Configure `backend/.env`. Set `MONGO_URI` to a MongoDB instance reachable
+   from Docker, and replace the example JWT and email-token secrets with
+   strong, unique values.
+
+3. Set a strong `CLOUDVISION_API_KEY` in `ai-service/.env`. Set the same value
+   as `AI_SERVICE_API_KEY` in `backend/.env`.
+
+4. Start the backend, worker, Redis, and AI service:
+
+   ```powershell
+   docker compose up --build
+   ```
+
+The services are available at:
+
+- API health: <http://localhost:5000/api/v1/health>
+- Swagger UI: <http://localhost:5000/api-docs>
+- AI service health: <http://localhost:8000/health>
+
+To stop the stack, run `docker compose down`. Redis data is stored in a named
+Docker volume and is retained unless that volume is explicitly removed.
+
+## Run locally
+
+Start Redis and make sure MongoDB is accessible before starting the
+application. Configure the same environment variables described in
+[Configuration](#configuration).
+
+### 1. Start the backend API
+
+```powershell
+Copy-Item backend/.env.example backend/.env
+Set-Location backend
+npm ci
 npm run dev
 ```
 
-2. Serve static frontend files (open `frontend/index.html` in the browser) or use a static server:
+### 2. Start the background worker
 
-```bash
-# From repo root
-npx http-server frontend -p 8080
-# then open http://localhost:8080
+In a second terminal:
+
+```powershell
+Set-Location backend
+npm run dev:worker
 ```
 
-3. Ensure `frontend/config.js` points to your backend (default is `http://localhost:5000/api/v1`). Edit if your backend runs on another port.
+Both the API and worker are needed for queued image-processing and email jobs.
 
-Option B — Full stack with AI service (local)
+### 3. Start the AI service
 
-1. Create and activate a Python environment and install dependencies:
+In a third terminal:
 
-```bash
-cd ai-service
-python -m venv .venv
-.venv\Scripts\activate    # Windows
-pip install -r requirements.txt
+```powershell
+Set-Location ai-service
+Copy-Item .env.example .env
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-2. Start the AI service (FastAPI) — this depends on `ai-service/main.py` and available models:
+Set `CLOUDVISION_API_KEY` in `ai-service/.env` and the matching
+`AI_SERVICE_API_KEY` in `backend/.env`. For CPU-only local development, use
+the PyTorch CPU package as shown above.
 
-```bash
-uvicorn main:app --reload --host 0.0.0.0 --port 5000
+### 4. Serve the frontend
+
+The frontend is static. From the repository root, run:
+
+```powershell
+python -m http.server 5500 --directory frontend
 ```
 
-3. Start the Node backend and the frontend as in Option A.
-
-Option C — Docker (recommended for reproducible runs)
-
-```bash
-docker-compose up --build
-```
-
-This should start required services (backend, ai-service) if the compose file is configured for them.
+Open <http://localhost:5500>. The frontend API URL is set in
+`frontend/config.js` and defaults to `http://localhost:5000/api/v1`.
 
 ## Configuration
 
-- `frontend/config.js` exposes `window.API_BASE_URL`. Update it to point at your running backend/FastAPI endpoint.
-- Backend service environment variables are typically in `backend/config/env.js` — follow the patterns there for DB, auth, and cloud credentials.
+The templates contain the full variable list and example values:
 
-Local AI service `.env` note:
+- [`backend/.env.example`](backend/.env.example)
+- [`ai-service/.env.example`](ai-service/.env.example)
 
-- For local development the AI service reads `CLOUDVISION_API_KEY` from an environment file. Copy `ai-service/.env.example` to `ai-service/.env` and set a secure key, or use the provided local `.env` file. Ensure `ai-service/.env` is listed in `.gitignore` and never committed to source control. The FastAPI service expects the shared secret to be sent in requests using the header `X-API-KEY`.
-## How to Contribute
+Important backend settings:
 
-1. Fork the repo and create a branch: `feature/your-feature`
-2. Make focused changes; keep PRs small and documented.
-3. Update or add tests where applicable.
-4. Open a Pull Request with a clear description and screenshots if UI changes.
-
-Areas that welcome contributions:
-- Replace the demo mock with a real model (example: plug in a trained LaMa or diffusion checkpoint in `ai-service/`).
-- Improve the mask generation step and export per-pixel confidence maps.
-- Add unit/integration tests for backend endpoints in `backend/`.
-- Accessibility and i18n improvements for the frontend.
-
-## Developer notes
-
-- The frontend is intentionally shipped as a single HTML file for ease of demonstration. Moving styles to a CSS file and extracting JS modules is a good next step.
-- Inline `config.js` must be present and reachable by the browser (it defines `window.API_BASE_URL`).
-
-## Contact & License
-
-If you have questions or want to collaborate, contact the maintainers via the `contact@cloudclear.ai` placeholder in the UI. This repository is provided for research/demo purposes; add your preferred license file if you intend to publish or share widely.
-
----
-
-Happy hacking — feel free to ask me to scaffold contributor docs, CI pipelines, or to wire a specific ML model into `ai-service/`.# CloudVision AI — Backend
-
-Production-ready backend for **CloudVision AI**, an AI-powered cloud removal
-and reconstruction platform for LISS-IV satellite imagery. This repository
-covers the backend only — the frontend is a separate, already-completed
-project.
-
-## Tech Stack
-
-- **Node.js + Express.js** — REST API
-- **MongoDB Atlas + Mongoose** — primary data store
-- **JWT** — access + refresh token authentication
-- **Multer + Cloudinary** — file uploads and storage
-- **Redis + BullMQ** — background job queues (AI inference, emails)
-- **Socket.IO** — real-time job progress and notifications
-- **FastAPI (Python)** — AI inference microservice (stub included, swap in real models)
-- **Docker / docker-compose** — containerized local development and deployment
-- **Pino** — structured logging
-- **Swagger / OpenAPI** — interactive API docs
-
----
-
-## Project Structure
-
-\`\`\`
-cloudvision-ai/
-├── docker-compose.yml          # orchestrates mongo, redis, ai-service, backend, worker
-├── backend/
-│   ├── Dockerfile
-│   ├── package.json
-│   ├── .env.example
-│   └── src/
-│       ├── app.js              # Express app assembly (middleware, routes, error handling)
-│       ├── server.js           # API process entry point (HTTP server + Socket.IO)
-│       ├── worker.js           # Background worker process entry point (BullMQ)
-│       ├── config/             # env, db, redis, cloudinary, logger config
-│       ├── models/             # Mongoose schemas
-│       ├── controllers/        # Route handler logic
-│       ├── routes/             # Express routers, one per feature
-│       ├── middlewares/        # auth, validation, upload, error handling
-│       ├── services/           # business logic reused across controllers/jobs
-│       ├── validators/         # express-validator rule sets
-│       ├── queues/             # BullMQ queue definitions
-│       ├── jobs/               # BullMQ job processor functions
-│       ├── socket/              # Socket.IO server + Redis pub/sub bridge
-│       ├── swagger/            # OpenAPI spec generation
-│       ├── utils/              # ApiError, ApiResponse, asyncHandler
-│       ├── uploads/            # (unused at rest — uploads stream straight to Cloudinary)
-│       └── logs/               # reserved for file-based log output if enabled later
-└── ai-service/
-    ├── Dockerfile
-    ├── requirements.txt
-    └── main.py                 # FastAPI inference service (STUB — see note below)
-\`\`\`
-
-### ⚠️ About `ai-service/main.py`
-
-This is a **working stub**, not the real cloud-removal models. It downloads
-the source image, stamps a "PROCESSED" label on it, and returns fixed
-plausible-looking metrics. This lets the entire pipeline — upload → queue →
-FastAPI call → Cloudinary → MongoDB → dashboard → notifications → real-time
-progress — be tested end-to-end before the actual GAN / Diffusion / LaMa /
-U-Net models are plugged in. Replace `run_inference()` with real model
-inference; the request/response contract and auth check can stay as-is.
-
----
-
-## Installation Guide
-
-### Option A: Docker (recommended — runs everything at once)
-
-**Prerequisites:** Docker + Docker Compose installed.
-
-\`\`\`bash
-# 1. Copy the env template and fill in real values (see Environment Variables below)
-cp backend/.env.example backend/.env
-
-# 2. Make sure AI_SERVICE_API_KEY in backend/.env matches API_KEY in ai-service/main.py
-
-# 3. Start everything
-docker-compose up --build
-\`\`\`
-
-- API: `http://localhost:5000/api/v1/health`
-- Swagger docs: `http://localhost:5000/api-docs`
-- FastAPI stub: `http://localhost:8000/health`
-
-### Option B: Running locally without Docker
-
-**Prerequisites:** Node.js 18+, MongoDB Atlas connection string, Redis running locally, Python 3.11+ (for the FastAPI stub).
-
-\`\`\`bash
-cd backend
-npm install
-cp .env.example .env
-# edit .env with real MongoDB Atlas URI, JWT secrets, Cloudinary keys, SMTP creds
-
-# Terminal 1 — API server
-npm run dev
-
-# Terminal 2 — background worker (required for AI processing + emails to actually run)
-npm run dev:worker
-
-# Terminal 3 — Redis (if not already running)
-redis-server
-
-# Terminal 4 — FastAPI stub
-cd ../ai-service
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
-\`\`\`
-
----
-
-## Environment Variables
-
-All variables are documented with examples in `backend/.env.example`. Summary:
-
-| Variable | Description |
+| Variable | Purpose |
 |---|---|
-| `NODE_ENV`, `PORT`, `CLIENT_URL`, `API_PREFIX` | Basic server config |
-| `MONGO_URI` | MongoDB Atlas (or local) connection string |
-| `JWT_ACCESS_SECRET`, `JWT_ACCESS_EXPIRES` | Access token signing secret + lifetime |
-| `JWT_REFRESH_SECRET`, `JWT_REFRESH_EXPIRES` | Refresh token signing secret + lifetime |
-| `EMAIL_TOKEN_SECRET`, `EMAIL_TOKEN_EXPIRES` | Email verification / reset token config |
-| `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD` | Redis connection (BullMQ + pub/sub) |
-| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | File storage |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | Outbound email |
-| `AI_SERVICE_BASE_URL`, `AI_SERVICE_TIMEOUT_MS`, `AI_SERVICE_API_KEY` | FastAPI connection |
-| `RATE_LIMIT_WINDOW_MS`, `RATE_LIMIT_MAX` | Global rate limiting |
+| `MONGO_URI` | MongoDB connection string; required by the API. |
+| `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `EMAIL_TOKEN_SECRET` | Signing secrets; all are required and must be replaced for any shared deployment. |
+| `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD` | Redis connection for queues and real-time messaging. |
+| `AI_SERVICE_BASE_URL`, `AI_SERVICE_API_KEY` | AI service URL and shared API key. |
+| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Image storage integration. |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | Email delivery settings. |
+| `PORT`, `API_PREFIX`, `RATE_LIMIT_WINDOW_MS`, `RATE_LIMIT_MAX` | HTTP server, API prefix, and rate-limit configuration. |
+| `CLIENT_URL` | Frontend origin used by Socket.IO and email verification/reset links. |
 
----
+Do not commit `.env` files or production credentials. The API requires the
+MongoDB URI and token secrets to start. Configure Redis, Cloudinary, SMTP, and
+the AI service for the features that depend on them.
 
-## Available Scripts
+## API and service endpoints
+
+The REST API prefix defaults to `/api/v1`; interactive documentation is served
+at `/api-docs`.
+
+| Resource | Route prefix | Examples of functionality |
+|---|---|---|
+| Health | `/health` | API health and uptime |
+| Authentication | `/auth` | Registration, login, token refresh, email verification, password reset |
+| Users | `/users` | Profile, avatar, password, account management |
+| Projects | `/projects` | Create and manage projects |
+| Images | `/images` | Upload and manage project images |
+| Experiments | `/experiments` | Queue image processing and view experiment history |
+| Dashboard | `/dashboard` | Summary metrics and recent activity |
+| Notifications | `/notifications` | List and manage notifications |
+| Administration | `/admin` | Administrative operations |
+
+The AI service exposes `GET /health`, `POST /predict`, and `POST /evaluate`.
+The prediction and evaluation endpoints require the `X-API-KEY` header.
+
+## Development
+
+Run these commands from `backend/`:
 
 | Command | Description |
 |---|---|
-| `npm run dev` | Start the API server with auto-restart (nodemon) |
-| `npm start` | Start the API server (production) |
-| `npm run dev:worker` | Start the background worker with auto-restart |
-| `npm run worker` | Start the background worker (production) |
-| `npm run lint` | Run ESLint |
-| `npm test` | Run Jest tests |
+| `npm run dev` | Start the API with automatic restart. |
+| `npm start` | Start the API. |
+| `npm run dev:worker` | Start the background worker with automatic restart. |
+| `npm run worker` | Start the background worker. |
+| `npm test` | Run the Jest test suite. |
+| `npm run lint` | Run ESLint on `src/`. |
 
-**Important:** the API server and worker are **separate processes**. Both must be running for the app to fully function — the API accepts requests and enqueues jobs; the worker is what actually processes AI inference jobs and sends emails.
+Keep API and worker processes running during end-to-end workflows. The
+frontend's API base URL is configured in `frontend/config.js`.
 
----
+## Repository layout
 
-## API Documentation
+```text
+.
+├── ai-service/       # FastAPI inference service and image-processing code
+├── backend/
+│   ├── src/
+│   │   ├── config/   # Environment, database, Redis, logging, storage
+│   │   ├── controllers/
+│   │   ├── jobs/     # Background job processors
+│   │   ├── models/   # Mongoose schemas
+│   │   ├── queues/
+│   │   ├── routes/
+│   │   ├── services/
+│   │   └── worker.js
+│   └── package.json
+├── frontend/
+│   ├── css/
+│   ├── js/
+│   ├── app.html
+│   ├── dashboard.html
+│   ├── index.html
+│   ├── login.html
+│   └── register.html
+└── docker-compose.yml
+```
 
-Interactive Swagger UI is available at `/api-docs` once the server is running (e.g. `http://localhost:5000/api-docs`). A representative set of routes carry full OpenAPI annotations (see `src/routes/auth.routes.js` for the pattern) — extend the same `@openapi` JSDoc block style to other route files as needed.
+## License
 
-### Full Endpoint Reference
-
-All endpoints are prefixed with `/api/v1`. 🔒 = requires `Authorization: Bearer <accessToken>`. 👑 = requires admin role.
-
-#### Auth (`/auth`)
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/auth/register` | Register a new account |
-| POST | `/auth/login` | Log in, returns access token + refresh cookie |
-| POST | `/auth/logout` | Revoke refresh token, clear cookie |
-| POST | `/auth/refresh` | Rotate refresh token, issue new access token |
-| POST | `/auth/verify-email` | Verify email via token |
-| POST | `/auth/resend-verification` | Resend verification email |
-| POST | `/auth/forgot-password` | Request password reset email |
-| POST | `/auth/reset-password` | Reset password via token |
-| GET | `/auth/me` 🔒 | Get current user |
-
-#### Users (`/users`)
-| Method | Endpoint | Description |
-|---|---|---|
-| PATCH | `/users/me` 🔒 | Update profile (name) |
-| PATCH | `/users/me/avatar` 🔒 | Upload/replace avatar (multipart, field: `avatar`) |
-| PATCH | `/users/me/password` 🔒 | Change password |
-| DELETE | `/users/me` 🔒 | Deactivate own account |
-
-#### Projects (`/projects`)
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/projects` 🔒 | Create project |
-| GET | `/projects` 🔒 | List projects (paginated, search, status filter) |
-| GET | `/projects/:id` 🔒 | Get project |
-| PATCH | `/projects/:id` 🔒 | Update project |
-| DELETE | `/projects/:id` 🔒 | Delete project |
-
-#### Images (`/images`)
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/images` 🔒 | Upload satellite image (multipart, field: `image`, body: `projectId`) |
-| GET | `/images?projectId=` 🔒 | List images for a project |
-| GET | `/images/:id` 🔒 | Get image |
-| DELETE | `/images/:id` 🔒 | Delete image |
-
-#### Experiments (`/experiments`)
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/experiments/process` 🔒 | Queue an AI processing job (body: `imageId`, `model`) — returns 202 |
-| GET | `/experiments` 🔒 | List experiment history (filter by project/model/status, sortable) |
-| GET | `/experiments/:id` 🔒 | Get experiment detail |
-
-#### Dashboard (`/dashboard`)
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/dashboard/summary` 🔒 | Totals, average metrics, storage used, recent experiments |
-
-#### Notifications (`/notifications`)
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/notifications` 🔒 | List notifications (paginated, unread count) |
-| PATCH | `/notifications/read-all` 🔒 | Mark all as read |
-| PATCH | `/notifications/:id/read` 🔒 | Mark one as read |
-| DELETE | `/notifications/:id` 🔒 | Delete a notification |
-
-#### Admin (`/admin`) — all require 👑
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/admin/users` | List all users (filter by role/active/search) |
-| DELETE | `/admin/users/:id` | Deactivate a user |
-| GET | `/admin/storage` | Platform-wide storage usage + top consumers |
-| GET | `/admin/jobs` | Job status counts + recent jobs |
-| GET | `/admin/logs` | Audit log (login events, admin actions, etc.) |
-| GET | `/admin/ai-statistics` | Per-model usage, success rate, average metrics |
-
-#### Health
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/health` | Liveness check |
-
----
-
-## Real-Time Events (Socket.IO)
-
-Connect with: `io(SERVER_URL, { auth: { token: accessToken } })`
-
-| Event | Direction | Payload |
-|---|---|---|
-| `job:progress` | server → client | `{ experimentId, imageId, stage, message, timestamp }` — stage is one of: `uploading`, `preprocessing`, `cloud_detection`, `mask_generation`, `running_ai`, `generating_output`, `saving_results`, `completed` |
-| `job:failed` | server → client | `{ experimentId, imageId, errorMessage, timestamp }` |
-| `notification:new` | server → client | Full Notification document |
-
----
-
-## Security Features
-
-- Helmet, CORS (credentialed, origin-locked), HPP, mongo-sanitize, xss-clean
-- Per-route rate limiting (stricter on auth endpoints)
-- JWT access + rotating refresh tokens (hashed at rest, single-use, theft-detectable via reuse)
-- bcrypt password hashing (cost factor 12)
-- Role-based authorization (`user` / `admin`)
-- Audit logging of security-relevant events (logins, admin actions)
-- Centralized input validation (express-validator) on every mutating endpoint
-
----
-
-## Architecture Notes
-
-- **Async AI processing:** `POST /experiments/process` returns immediately (202) with a `queued` experiment. The actual inference runs in the separate worker process via BullMQ, with live progress delivered over Socket.IO regardless of which process (API or worker) triggers an event — bridged through Redis pub/sub (see `src/services/realtime.publisher.js`).
-- **Emails are queued, not sent inline** — registration, verification resend, and password reset never block on SMTP; BullMQ retries automatically with exponential backoff on transient failures.
-- **Uploads are memory-streamed** — Multer uses in-memory storage and Cloudinary's upload stream, so no file ever touches disk, keeping the API stateless and horizontally scalable.
-=======
-# liss4-cloud-removal
-Full-stack Generative AI platform for cloud detection and reconstruction of LISS-IV satellite images using FastAPI, React.js, Docker, OpenCV, Rasterio, GDAL, and Deep Learning. Supports real-time inference, geospatial processing, and model performance evaluation.
->>>>>>> a1e143f8234c7ce561c34433ede37ff8ee0c2533
+No license is currently specified in this repository. Contact the maintainers
+before redistributing or using the project beyond the permissions provided by
+its dependencies.
